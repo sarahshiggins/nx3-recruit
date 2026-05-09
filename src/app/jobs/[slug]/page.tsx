@@ -61,20 +61,40 @@ export default function JobPage() {
     );
   }
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError(null);
 
-    // Simulate submission — will connect to API later
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const res = await fetch("/api/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobSlug: job.slug,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          resumeUrl: formData.resume,
+          screeningAnswers,
+        }),
+      });
 
-    console.log("Application submitted:", {
-      job: job.slug,
-      candidate: formData,
-      screeningAnswers,
-    });
+      const data = await res.json();
 
-    setSubmitted(true);
+      if (!res.ok) {
+        setError(data.error || "Something went wrong. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+
+      setSubmitted(true);
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+    }
     setSubmitting(false);
   };
 
@@ -328,6 +348,12 @@ export default function JobPage() {
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="bg-red-900/20 border border-red-800/30 rounded px-3 py-2 text-sm text-red-400">
+                      {error}
                     </div>
                   )}
 
