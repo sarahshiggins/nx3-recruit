@@ -46,14 +46,17 @@ export default function Dashboard() {
               >
                 Dashboard
               </Link>
+              <Link
+                href="/admin"
+                className="text-sm text-[var(--accent)] hover:text-[var(--accent-hover)] font-medium transition-colors"
+              >
+                Admin →
+              </Link>
               <span className="text-sm text-[var(--text-muted)] cursor-not-allowed">
                 Pipeline
               </span>
               <span className="text-sm text-[var(--text-muted)] cursor-not-allowed">
                 Sourcing
-              </span>
-              <span className="text-sm text-[var(--text-muted)] cursor-not-allowed">
-                Settings
               </span>
             </div>
           </div>
