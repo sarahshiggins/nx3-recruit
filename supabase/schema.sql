@@ -46,9 +46,17 @@ create policy "Allow public inserts" on applications
 create policy "Allow reads" on applications
   for select using (true);
 
--- Allow updates (for stage changes)
+-- Allow updates (for stage changes + notes)
 create policy "Allow updates" on applications
   for update using (true);
+
+-- Allow deletes (admin cleanup)
+create policy "Allow deletes" on applications
+  for delete using (true);
+
+-- Allow deletes on storage objects (resume cleanup)
+create policy "Allow deletes on resumes" on storage.objects
+  for delete using (bucket_id = 'resumes');
 
 -- Index for quick lookups
 create index idx_applications_job_slug on applications(job_slug);

@@ -3,6 +3,9 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { jobs } from "@/lib/jobs";
 import StageSelector from "./StageSelector";
+import NotesEditor from "./NotesEditor";
+import DeleteButton from "./DeleteButton";
+import EmailActions from "./EmailActions";
 
 type Application = {
   id: string;
@@ -15,6 +18,7 @@ type Application = {
   stage: string;
   applied_at: string;
   screening_answers: Record<string, string> | null;
+  notes: string | null;
 };
 
 const STAGES = [
@@ -237,6 +241,28 @@ export default async function ApplicationDetailPage({
             >
               View all {job?.title ?? app.job_slug} applicants →
             </a>
+          </section>
+
+          <EmailActions
+            applicationId={app.id}
+            candidateName={`${app.first_name} ${app.last_name}`}
+            candidateEmail={app.email}
+            stage={app.stage}
+          />
+
+          <NotesEditor
+            applicationId={app.id}
+            initialNotes={app.notes || ""}
+          />
+
+          <section className="border border-[var(--border)] rounded-lg bg-[var(--card)] p-5">
+            <h2 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-4" style={{ fontFamily: "var(--font-mono)" }}>
+              Danger Zone
+            </h2>
+            <DeleteButton
+              applicationId={app.id}
+              candidateName={`${app.first_name} ${app.last_name}`}
+            />
           </section>
         </div>
       </div>
