@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { getJobBySlug } from "@/lib/jobs";
+import ResumeUpload from "./ResumeUpload";
 
 function NavBar() {
   return (
@@ -40,8 +41,9 @@ export default function JobPage() {
     lastName: "",
     email: "",
     phone: "",
-    resume: "",
   });
+  const [resumeUrl, setResumeUrl] = useState("");
+  const [resumeFilename, setResumeFilename] = useState("");
   const [screeningAnswers, setScreeningAnswers] = useState<
     Record<string, string>
   >({});
@@ -69,6 +71,12 @@ export default function JobPage() {
     setError(null);
 
     try {
+      if (!resumeUrl) {
+        setError("Please upload your resume.");
+        setSubmitting(false);
+        return;
+      }
+
       const res = await fetch("/api/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -78,7 +86,7 @@ export default function JobPage() {
           lastName: formData.lastName,
           email: formData.email,
           phone: formData.phone,
-          resumeUrl: formData.resume,
+          resumeUrl,
           screeningAnswers,
         }),
       });
@@ -269,14 +277,13 @@ export default function JobPage() {
                     <label className="font-[family-name:var(--font-mono)] text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">
                       Resume *
                     </label>
-                    <div className="border border-dashed border-[var(--border)] rounded px-3 py-4 text-center hover:border-[var(--border-hover)] transition-colors cursor-pointer">
-                      <p className="text-[var(--text-muted)] text-sm">
-                        Drop your resume here or click to upload
-                      </p>
-                      <p className="text-[var(--text-muted)] text-xs mt-1">
-                        PDF, DOC, or DOCX
-                      </p>
-                    </div>
+                    <ResumeUpload
+                      required
+                      onUploaded={(url, filename) => {
+                        setResumeUrl(url);
+                        setResumeFilename(filename);
+                      }}
+                    />
                   </div>
 
                   {/* Screening Questions */}

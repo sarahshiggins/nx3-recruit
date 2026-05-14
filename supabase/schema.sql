@@ -54,3 +54,16 @@ create policy "Allow updates" on applications
 create index idx_applications_job_slug on applications(job_slug);
 create index idx_applications_stage on applications(stage);
 create index idx_applications_email on applications(email);
+
+-- Resume storage bucket
+insert into storage.buckets (id, name, public)
+  values ('resumes', 'resumes', true)
+  on conflict (id) do nothing;
+
+-- Allow public uploads to resumes bucket (applications are anonymous)
+create policy "Allow public uploads to resumes" on storage.objects
+  for insert with check (bucket_id = 'resumes');
+
+-- Allow public reads from resumes bucket
+create policy "Allow public reads from resumes" on storage.objects
+  for select using (bucket_id = 'resumes');
