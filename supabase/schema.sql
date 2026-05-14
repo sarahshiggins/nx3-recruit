@@ -63,6 +63,43 @@ create index idx_applications_job_slug on applications(job_slug);
 create index idx_applications_stage on applications(stage);
 create index idx_applications_email on applications(email);
 
+-- Jobs table
+create table if not exists jobs (
+  id uuid default gen_random_uuid() primary key,
+  slug text not null unique,
+  title text not null,
+  location text not null default 'Chicago, IL',
+  type text not null default 'Full-time',
+  department text not null default 'Engineering',
+  summary text not null,
+  description text not null,
+  screening_questions jsonb default '[]',
+  status text not null default 'OPEN',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create trigger jobs_updated_at
+  before update on jobs
+  for each row execute function update_updated_at();
+
+alter table jobs enable row level security;
+
+create policy "Allow public reads on jobs" on jobs
+  for select using (true);
+
+create policy "Allow inserts on jobs" on jobs
+  for insert with check (true);
+
+create policy "Allow updates on jobs" on jobs
+  for update using (true);
+
+create policy "Allow deletes on jobs" on jobs
+  for delete using (true);
+
+create index idx_jobs_slug on jobs(slug);
+create index idx_jobs_status on jobs(status);
+
 -- Resume storage bucket
 insert into storage.buckets (id, name, public)
   values ('resumes', 'resumes', true)

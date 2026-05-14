@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { jobs } from "@/lib/jobs";
+import { getOpenJobs, type JobListing } from "@/lib/jobs-db";
+import { jobPostingJsonLd } from "@/lib/structured-data";
 
 function NavBar() {
   return (
@@ -44,7 +45,7 @@ function Hero() {
   );
 }
 
-function JobCard({ job }: { job: (typeof jobs)[0] }) {
+function JobCard({ job }: { job: JobListing }) {
   return (
     <Link href={`/jobs/${job.slug}`}>
       <div className="group border border-[var(--border)] rounded-lg p-6 bg-[var(--card)] hover:bg-[var(--card-hover)] hover:border-[var(--border-hover)] transition-all duration-200 cursor-pointer">
@@ -79,23 +80,38 @@ function JobCard({ job }: { job: (typeof jobs)[0] }) {
   );
 }
 
-function OpenPositions() {
+async function OpenPositions() {
+  const jobs = await getOpenJobs();
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nx3-recruit.vercel.app";
+
   return (
-    <section className="py-20 px-6" id="positions">
-      <div className="max-w-6xl mx-auto">
-        <p className="font-[family-name:var(--font-mono)] text-xs tracking-[0.25em] uppercase text-[var(--text-muted)] mb-3">
-          Open Positions
-        </p>
-        <h2 className="text-3xl font-bold mb-10">
-          {jobs.length} roles available
-        </h2>
-        <div className="grid gap-4">
-          {jobs.map((job) => (
-            <JobCard key={job.id} job={job} />
-          ))}
+    <>
+      {/* Google Jobs structured data */}
+      {jobs.map((job) => (
+        <script
+          key={`ld-${job.id}`}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jobPostingJsonLd(job, baseUrl)),
+          }}
+        />
+      ))}
+      <section className="py-20 px-6" id="positions">
+        <div className="max-w-6xl mx-auto">
+          <p className="font-[family-name:var(--font-mono)] text-xs tracking-[0.25em] uppercase text-[var(--text-muted)] mb-3">
+            Open Positions
+          </p>
+          <h2 className="text-3xl font-bold mb-10">
+            {jobs.length} role{jobs.length !== 1 ? "s" : ""} available
+          </h2>
+          <div className="grid gap-4">
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} />
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
 

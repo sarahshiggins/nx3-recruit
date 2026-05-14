@@ -2,9 +2,25 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
-import { getJobBySlug } from "@/lib/jobs";
+import { useState, useEffect } from "react";
 import ResumeUpload from "./ResumeUpload";
+
+interface JobListing {
+  id: string;
+  slug: string;
+  title: string;
+  location: string;
+  type: string;
+  department: string;
+  summary: string;
+  description: string;
+  screeningQuestions: {
+    id: string;
+    question: string;
+    type: "TEXT" | "TEXTAREA" | "YES_NO";
+    required: boolean;
+  }[];
+}
 
 function NavBar() {
   return (
@@ -34,7 +50,8 @@ function NavBar() {
 export default function JobPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const job = getJobBySlug(slug);
+  const [job, setJob] = useState<JobListing | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState<Record<string, string>>({
     firstName: "",
@@ -49,6 +66,29 @@ export default function JobPage() {
   >({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadJob() {
+      try {
+        const res = await fetch(`/api/jobs/${slug}`);
+        if (res.ok) {
+          const data = await res.json();
+          setJob(data);
+        }
+      } catch { /* */ }
+      setLoading(false);
+    }
+    loadJob();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-[var(--text-muted)] text-sm">Loading...</p>
+      </main>
+    );
+  }
 
   if (!job) {
     return (
@@ -62,8 +102,6 @@ export default function JobPage() {
       </main>
     );
   }
-
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

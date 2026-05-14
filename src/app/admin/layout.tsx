@@ -33,6 +33,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               >
                 Pipeline
               </Link>
+              <Link
+                href="/admin/jobs"
+                className="text-sm text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors"
+              >
+                Jobs
+              </Link>
             </div>
           </div>
           <div className="flex items-center gap-4">
