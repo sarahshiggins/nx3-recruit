@@ -88,7 +88,20 @@ export default async function AdminDashboard() {
             <StatCard label="Total Applications" value={data.total.toString()} />
             <StatCard label="New" value={(data.byStage["NEW"] ?? 0).toString()} />
             <StatCard label="In Interview" value={(data.byStage["INTERVIEW"] ?? 0).toString()} />
-            <StatCard label="Hired" value={(data.byStage["HIRED"] ?? 0).toString()} />
+            <Link
+              href="/admin/pipeline"
+              className="border border-[var(--accent)]/30 rounded-lg bg-[var(--accent)]/5 p-5 hover:bg-[var(--accent)]/10 transition-colors group"
+            >
+              <p
+                className="text-xs text-[var(--accent)] uppercase tracking-wider mb-2"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                Pipeline
+              </p>
+              <p className="text-lg font-bold text-[var(--text)] group-hover:text-white transition-colors">
+                View Kanban →
+              </p>
+            </Link>
           </div>
 
           {/* Per-job breakdown */}

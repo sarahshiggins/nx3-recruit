@@ -27,6 +27,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               >
                 Applications
               </Link>
+              <Link
+                href="/admin/pipeline"
+                className="text-sm text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors"
+              >
+                Pipeline
+              </Link>
             </div>
           </div>
           <div className="flex items-center gap-4">
