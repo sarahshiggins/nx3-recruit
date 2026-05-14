@@ -15,6 +15,15 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Nexus3 — Careers",
   description: "Join Nexus3. We build and operate AI-driven businesses across industries where intelligent systems can replace entire workflows.",
+  icons: {
+    icon: "/nexus3-favicon.png",
+  },
+  openGraph: {
+    title: "Nexus3 — Careers",
+    description: "Build the future of AI with us. Small teams. Big problems. Real outcomes.",
+    type: "website",
+    siteName: "NX3 Recruit",
+  },
 };
 
 export default function RootLayout({
