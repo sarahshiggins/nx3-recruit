@@ -87,7 +87,7 @@ export async function sendCandidateEmail(params: SendCandidateEmailParams) {
     return { error: "RESEND_API_KEY not configured" };
   }
 
-  const fromEmail = process.env.NOTIFY_FROM_EMAIL || "onboarding@resend.dev";
+  const fromEmail = process.env.NOTIFY_FROM_EMAIL || "recruiting@nexus3cap.com";
   const template = TEMPLATES[params.type];
 
   const res = await fetch(RESEND_API_URL, {

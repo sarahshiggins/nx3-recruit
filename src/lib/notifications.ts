@@ -37,7 +37,7 @@ export async function notifyNewApplication(params: NotifyNewApplicationParams) {
 
   if (notifyEmails.length === 0) return;
 
-  const fromEmail = process.env.NOTIFY_FROM_EMAIL || "onboarding@resend.dev";
+  const fromEmail = process.env.NOTIFY_FROM_EMAIL || "recruiting@nexus3cap.com";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nx3-recruit.vercel.app";
   const adminUrl = `${appUrl}/admin/applications/${params.applicationId}`;
 
