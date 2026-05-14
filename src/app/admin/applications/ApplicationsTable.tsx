@@ -34,10 +34,13 @@ const STAGE_COLORS: Record<string, { bg: string; color: string }> = {
   REJECTED: { bg: "rgba(220,38,38,0.15)", color: "#f87171" },
 };
 
-const JOB_TITLES: Record<string, string> = {
-  "genai-rd-engineer": "GenAI R&D Engineer",
-  "bd-intern": "Business Development Intern",
-};
+// Job titles are derived from the slug if not in our known list
+function getJobTitle(slug: string): string {
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 export default function ApplicationsTable({
   applications,
@@ -263,7 +266,7 @@ export default function ApplicationsTable({
         {/* Rows */}
         <div className="divide-y divide-[var(--border)]">
           {applications.map((app) => {
-            const jobTitle = JOB_TITLES[app.job_slug] ?? app.job_slug;
+            const jobTitle = getJobTitle(app.job_slug);
             const stageStyle = STAGE_COLORS[app.stage] ?? STAGE_COLORS["NEW"];
             const isSelected = selected.has(app.id);
 

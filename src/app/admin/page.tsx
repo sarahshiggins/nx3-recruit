@@ -59,11 +59,6 @@ export default async function AdminDashboard() {
 
   const data = await getAdminData();
 
-  const jobLabels: Record<string, string> = {
-    "genai-rd-engineer": "GenAI R&D Engineer",
-    "bd-intern": "BD Intern",
-  };
-
   return (
     <div className="px-6 py-10 max-w-7xl mx-auto">
       <div className="mb-10">

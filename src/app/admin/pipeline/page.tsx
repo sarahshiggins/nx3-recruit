@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 
 type Application = {
@@ -43,41 +43,70 @@ const STAGE_COLORS: Record<string, string> = {
   REJECTED: "#f87171",
 };
 
-const JOB_LABELS: Record<string, string> = {
-  "genai-rd-engineer": "R&D Eng",
-  "bd-intern": "BD Intern",
-};
+// Colors assigned to jobs dynamically
+const DOT_COLORS = ["#a78bfa", "#f59e0b", "#60a5fa", "#4ade80", "#f87171", "#9b8fd9"];
 
-const JOB_DOT_COLORS: Record<string, string> = {
-  "genai-rd-engineer": "#a78bfa",
-  "bd-intern": "#f59e0b",
+type Job = {
+  id: string;
+  slug: string;
+  title: string;
 };
 
 export default function PipelinePage() {
   const [applications, setApplications] = useState<Application[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [dragItem, setDragItem] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [jobFilter, setJobFilter] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
 
-  const fetchApplications = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/applications");
-      if (res.ok) {
-        const data = await res.json();
-        setApplications(data);
-      }
+      const [appsRes, jobsRes] = await Promise.all([
+        fetch("/api/admin/applications"),
+        fetch("/api/admin/jobs"),
+      ]);
+      if (appsRes.ok) setApplications(await appsRes.json());
+      if (jobsRes.ok) setJobs(await jobsRes.json());
     } catch (err) {
-      console.error("Failed to fetch applications:", err);
+      console.error("Failed to fetch data:", err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchApplications();
-  }, [fetchApplications]);
+    fetchData();
+  }, [fetchData]);
+
+  // Build dynamic job labels and colors from DB jobs + any slugs in applications
+  const jobLookup = useMemo(() => {
+    const lookup: Record<string, { label: string; color: string }> = {};
+    // From jobs table
+    jobs.forEach((j, i) => {
+      const shortLabel = j.title
+        .replace(/^GenAI\s*/i, "")
+        .replace(/^Business Development\s*/i, "BD ")
+        .trim();
+      lookup[j.slug] = { label: shortLabel, color: DOT_COLORS[i % DOT_COLORS.length] };
+    });
+    // Any slugs in applications not in jobs table
+    applications.forEach((a) => {
+      if (!lookup[a.job_slug]) {
+        const idx = Object.keys(lookup).length;
+        lookup[a.job_slug] = { label: a.job_slug, color: DOT_COLORS[idx % DOT_COLORS.length] };
+      }
+    });
+    return lookup;
+  }, [jobs, applications]);
+
+  const fetchApplications = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/applications");
+      if (res.ok) setApplications(await res.json());
+    } catch { /* */ }
+  }, []);
 
   const moveApplication = async (appId: string, newStage: string) => {
     setUpdating(appId);
@@ -182,8 +211,10 @@ export default function PipelinePage() {
           </span>
           {[
             { value: "all", label: "All Jobs" },
-            { value: "genai-rd-engineer", label: "R&D Eng" },
-            { value: "bd-intern", label: "BD Intern" },
+            ...Object.entries(jobLookup).map(([slug, info]) => ({
+              value: slug,
+              label: info.label,
+            })),
           ].map((opt) => (
             <button
               key={opt.value}
@@ -293,11 +324,11 @@ export default function PipelinePage() {
                           className="w-1.5 h-1.5 rounded-full"
                           style={{
                             backgroundColor:
-                              JOB_DOT_COLORS[app.job_slug] || "#6a6a7a",
+                              jobLookup[app.job_slug]?.color || "#6a6a7a",
                           }}
                         />
                         <span className="text-xs text-[var(--text-muted)]">
-                          {JOB_LABELS[app.job_slug] || app.job_slug}
+                          {jobLookup[app.job_slug]?.label || app.job_slug}
                         </span>
                       </div>
                       <p
