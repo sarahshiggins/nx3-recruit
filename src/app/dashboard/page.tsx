@@ -73,7 +73,7 @@ export default function Dashboard() {
         <div className="mb-10">
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-[var(--text-muted)] text-sm mt-1">
-            Recruiting overview for Nexus3 Capital
+            Recruiting overview for Nexus3
           </p>
         </div>
 

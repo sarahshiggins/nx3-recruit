@@ -1,6 +1,6 @@
 # NX3 Recruit
 
-AI-native recruiting platform built by [Nexus3 Capital](https://nexus3.ai).
+AI-native recruiting platform built by [Nexus3](https://nexus3.ai).
 
 Job board syndication, AI-powered candidate screening, pipeline management, and outbound sourcing — all in one tool.
 
@@ -61,4 +61,4 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## License
 
-Private — Nexus3 Capital
+Private — Nexus3

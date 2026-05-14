@@ -120,7 +120,7 @@ function About() {
             years building cutting-edge software companies.
           </p>
           <p>
-            Our operating companies — NX3 Labs and Nexus3 Capital — work together
+            Our operating companies — NX3 Labs and NX3 Capital — work together
             to turn early research into commercial products at scale. We focus on
             large vertical markets where AI can materially improve
             decision-making and operational efficiency.
@@ -139,7 +139,7 @@ function Footer() {
     <footer className="py-10 px-6 border-t border-[var(--border)]">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <span className="font-[family-name:var(--font-mono)] text-xs text-[var(--text-muted)]">
-          © 2026 Nexus3 Capital
+          © 2026 Nexus3
         </span>
         <span className="font-[family-name:var(--font-mono)] text-xs text-[var(--text-muted)]">
           Chicago, IL

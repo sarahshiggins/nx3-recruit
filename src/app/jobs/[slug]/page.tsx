@@ -120,7 +120,7 @@ export default function JobPage() {
           </div>
           <h1 className="text-3xl font-bold mb-4">Application received</h1>
           <p className="text-[var(--text-secondary)] text-lg mb-8">
-            Thanks for applying to {job.title} at Nexus3 Capital. We&apos;ll review
+            Thanks for applying to {job.title} at Nexus3. We&apos;ll review
             your application and get back to you soon.
           </p>
           <Link

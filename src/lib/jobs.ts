@@ -162,7 +162,7 @@ You will join NX3 Labs as a core member of a small, focused engineering team wor
       "Identify vertical markets ripe for AI disruption, ideate solutions, and participate in customer discovery. Direct mentorship from the founding CEO.",
     description: `## About the Role
 
-Nexus3 Capital is seeking a proactive Business Development Intern to join for the summer, with the potential to extend into the fall. Your mission: identify vertical markets that can benefit from or be disrupted by generative AI.
+Nexus3 is seeking a proactive Business Development Intern to join for the summer, with the potential to extend into the fall. Your mission: identify vertical markets that can benefit from or be disrupted by generative AI.
 
 ## Key Responsibilities
 

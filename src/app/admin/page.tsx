@@ -71,7 +71,7 @@ export default async function AdminDashboard() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-[var(--text-muted)] text-sm mt-1">
-          Recruiting overview — Nexus3 Capital
+          Recruiting overview — Nexus3
         </p>
       </div>
 

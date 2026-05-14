@@ -13,8 +13,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nexus3 Capital — Careers",
-  description: "Join Nexus3 Capital. We build and operate AI-driven businesses across industries where intelligent systems can replace entire workflows.",
+  title: "Nexus3 — Careers",
+  description: "Join Nexus3. We build and operate AI-driven businesses across industries where intelligent systems can replace entire workflows.",
 };
 
 export default function RootLayout({
