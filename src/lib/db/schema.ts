@@ -8,9 +8,8 @@
 // Pipeline stages a candidate moves through
 export type PipelineStage =
   | "NEW"
-  | "SCREENING"
-  | "CHALLENGE" // take-home challenge sent
-  | "CHALLENGE_REVIEW" // Dwight is grading the submission
+  | "ZOOM_SCREEN"
+  | "FINAL_INTERVIEW"
   | "INTERVIEW"
   | "OFFER"
   | "HIRED"

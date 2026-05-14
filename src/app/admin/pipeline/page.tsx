@@ -15,10 +15,9 @@ type Application = {
 
 const STAGES = [
   "NEW",
-  "SCREENING",
-  "CHALLENGE",
-  "CHALLENGE_REVIEW",
+  "ZOOM_SCREEN",
   "INTERVIEW",
+  "FINAL_INTERVIEW",
   "OFFER",
   "HIRED",
   "REJECTED",
@@ -26,10 +25,9 @@ const STAGES = [
 
 const STAGE_LABELS: Record<string, string> = {
   NEW: "New",
-  SCREENING: "Screening",
-  CHALLENGE: "Challenge",
-  CHALLENGE_REVIEW: "Review",
+  ZOOM_SCREEN: "Zoom Screen",
   INTERVIEW: "Interview",
+  FINAL_INTERVIEW: "Final Interview",
   OFFER: "Offer",
   HIRED: "Hired",
   REJECTED: "Rejected",
@@ -37,10 +35,9 @@ const STAGE_LABELS: Record<string, string> = {
 
 const STAGE_COLORS: Record<string, string> = {
   NEW: "#6a6a7a",
-  SCREENING: "#9b8fd9",
-  CHALLENGE: "#f59e0b",
-  CHALLENGE_REVIEW: "#f59e0b",
+  ZOOM_SCREEN: "#9b8fd9",
   INTERVIEW: "#60a5fa",
+  FINAL_INTERVIEW: "#818cf8",
   OFFER: "#a78bfa",
   HIRED: "#4ade80",
   REJECTED: "#f87171",

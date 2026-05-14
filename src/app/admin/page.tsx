@@ -7,10 +7,9 @@ import { jobs } from "@/lib/jobs";
 function getStageBadge(stage: string) {
   const map: Record<string, { label: string; color: string }> = {
     NEW: { label: "New", color: "#6a6a7a" },
-    SCREENING: { label: "Screening", color: "#7c6fcd" },
-    CHALLENGE: { label: "Challenge", color: "#d97706" },
-    CHALLENGE_REVIEW: { label: "Challenge Review", color: "#b45309" },
+    ZOOM_SCREEN: { label: "Zoom Screen", color: "#7c6fcd" },
     INTERVIEW: { label: "Interview", color: "#2563eb" },
+    FINAL_INTERVIEW: { label: "Final Interview", color: "#6366f1" },
     OFFER: { label: "Offer", color: "#7c3aed" },
     HIRED: { label: "Hired", color: "#16a34a" },
     REJECTED: { label: "Rejected", color: "#dc2626" },
@@ -243,10 +242,9 @@ function StatCard({ label, value }: { label: string; value: string }) {
 function StageBadge({ stage }: { stage: string }) {
   const map: Record<string, { label: string; bg: string; color: string }> = {
     NEW: { label: "New", bg: "rgba(106,106,122,0.15)", color: "#9898a8" },
-    SCREENING: { label: "Screening", bg: "rgba(124,111,205,0.15)", color: "#9b8fd9" },
-    CHALLENGE: { label: "Challenge", bg: "rgba(217,119,6,0.15)", color: "#f59e0b" },
-    CHALLENGE_REVIEW: { label: "Challenge Review", bg: "rgba(180,83,9,0.15)", color: "#f59e0b" },
+    ZOOM_SCREEN: { label: "Zoom Screen", bg: "rgba(124,111,205,0.15)", color: "#9b8fd9" },
     INTERVIEW: { label: "Interview", bg: "rgba(37,99,235,0.15)", color: "#60a5fa" },
+    FINAL_INTERVIEW: { label: "Final Interview", bg: "rgba(99,102,241,0.15)", color: "#818cf8" },
     OFFER: { label: "Offer", bg: "rgba(124,58,237,0.15)", color: "#a78bfa" },
     HIRED: { label: "Hired", bg: "rgba(22,163,74,0.15)", color: "#4ade80" },
     REJECTED: { label: "Rejected", bg: "rgba(220,38,38,0.15)", color: "#f87171" },

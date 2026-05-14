@@ -23,10 +23,9 @@ type Application = {
 
 const STAGES = [
   "NEW",
-  "SCREENING",
-  "CHALLENGE",
-  "CHALLENGE_REVIEW",
+  "ZOOM_SCREEN",
   "INTERVIEW",
+  "FINAL_INTERVIEW",
   "OFFER",
   "HIRED",
   "REJECTED",
@@ -34,10 +33,9 @@ const STAGES = [
 
 const STAGE_LABELS: Record<string, string> = {
   NEW: "New",
-  SCREENING: "Screening",
-  CHALLENGE: "Challenge",
-  CHALLENGE_REVIEW: "Challenge Review",
+  ZOOM_SCREEN: "Zoom Screen",
   INTERVIEW: "Interview",
+  FINAL_INTERVIEW: "Final Interview",
   OFFER: "Offer",
   HIRED: "Hired",
   REJECTED: "Rejected",
@@ -45,10 +43,9 @@ const STAGE_LABELS: Record<string, string> = {
 
 const STAGE_COLORS: Record<string, { bg: string; color: string }> = {
   NEW: { bg: "rgba(106,106,122,0.15)", color: "#9898a8" },
-  SCREENING: { bg: "rgba(124,111,205,0.15)", color: "#9b8fd9" },
-  CHALLENGE: { bg: "rgba(217,119,6,0.15)", color: "#f59e0b" },
-  CHALLENGE_REVIEW: { bg: "rgba(180,83,9,0.15)", color: "#f59e0b" },
+  ZOOM_SCREEN: { bg: "rgba(124,111,205,0.15)", color: "#9b8fd9" },
   INTERVIEW: { bg: "rgba(37,99,235,0.15)", color: "#60a5fa" },
+  FINAL_INTERVIEW: { bg: "rgba(99,102,241,0.15)", color: "#818cf8" },
   OFFER: { bg: "rgba(124,58,237,0.15)", color: "#a78bfa" },
   HIRED: { bg: "rgba(22,163,74,0.15)", color: "#4ade80" },
   REJECTED: { bg: "rgba(220,38,38,0.15)", color: "#f87171" },
