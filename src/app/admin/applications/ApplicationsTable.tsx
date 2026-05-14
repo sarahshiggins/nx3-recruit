@@ -48,6 +48,8 @@ export default function ApplicationsTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [bulkAction, setBulkAction] = useState<"delete" | "reject" | null>(null);
+  const [rejecting, setRejecting] = useState(false);
   const router = useRouter();
 
   const allSelected = applications.length > 0 && selected.size === applications.length;
@@ -87,8 +89,30 @@ export default function ApplicationsTable({
     }
 
     setSelected(new Set());
-    setConfirmDelete(false);
+    setBulkAction(null);
     setDeleting(false);
+    router.refresh();
+  }
+
+  async function handleBulkReject() {
+    setRejecting(true);
+
+    const ids = Array.from(selected);
+
+    // Send rejection email + move to REJECTED for each
+    await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/admin/applications/${id}/email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "rejection" }),
+        })
+      )
+    );
+
+    setSelected(new Set());
+    setBulkAction(null);
+    setRejecting(false);
     router.refresh();
   }
 
@@ -101,14 +125,22 @@ export default function ApplicationsTable({
             {selected.size} selected
           </span>
 
-          {!confirmDelete ? (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="text-xs font-medium px-3 py-1.5 rounded border border-red-800/30 text-red-400 hover:bg-red-900/15 transition-colors"
-            >
-              Delete selected
-            </button>
-          ) : (
+          {!bulkAction ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setBulkAction("reject")}
+                className="text-xs font-medium px-3 py-1.5 rounded border border-red-800/30 text-red-400 hover:bg-red-900/15 transition-colors"
+              >
+                Reject + send email
+              </button>
+              <button
+                onClick={() => setBulkAction("delete")}
+                className="text-xs font-medium px-3 py-1.5 rounded border border-[var(--border)] text-[var(--text-muted)] hover:text-red-400 hover:border-red-800/30 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          ) : bulkAction === "delete" ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-red-400">
                 Delete {selected.size} application{selected.size !== 1 ? "s" : ""}?
@@ -121,8 +153,28 @@ export default function ApplicationsTable({
                 {deleting ? "Deleting…" : "Confirm"}
               </button>
               <button
-                onClick={() => setConfirmDelete(false)}
+                onClick={() => setBulkAction(null)}
                 disabled={deleting}
+                className="text-xs font-medium px-3 py-1.5 rounded border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-red-400">
+                Reject {selected.size} candidate{selected.size !== 1 ? "s" : ""} + send rejection email{selected.size !== 1 ? "s" : ""}?
+              </span>
+              <button
+                onClick={handleBulkReject}
+                disabled={rejecting}
+                className="text-xs font-medium px-3 py-1.5 rounded bg-red-600 hover:bg-red-500 text-white transition-colors disabled:opacity-50"
+              >
+                {rejecting ? "Sending…" : "Confirm"}
+              </button>
+              <button
+                onClick={() => setBulkAction(null)}
+                disabled={rejecting}
                 className="text-xs font-medium px-3 py-1.5 rounded border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors"
               >
                 Cancel
@@ -131,7 +183,7 @@ export default function ApplicationsTable({
           )}
 
           <button
-            onClick={() => { setSelected(new Set()); setConfirmDelete(false); }}
+            onClick={() => { setSelected(new Set()); setBulkAction(null); }}
             className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors ml-auto"
           >
             Clear selection
