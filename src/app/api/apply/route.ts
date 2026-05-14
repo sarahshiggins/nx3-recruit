@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { notifyNewApplication } from "@/lib/notifications";
+import { jobs } from "@/lib/jobs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -67,6 +69,19 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Send email notification (non-blocking — don't fail the application if email fails)
+    const job = jobs.find((j) => j.slug === jobSlug);
+    notifyNewApplication({
+      candidateName: `${firstName} ${lastName}`,
+      email,
+      phone: phone || undefined,
+      jobTitle: job?.title || jobSlug,
+      jobSlug,
+      applicationId: data.id,
+      resumeUrl: resumeUrl || undefined,
+      screeningAnswers: screeningAnswers || undefined,
+    }).catch((err) => console.error("Notification error:", err));
 
     return NextResponse.json({ success: true, id: data.id }, { status: 201 });
   } catch (err) {
