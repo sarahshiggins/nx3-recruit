@@ -11,7 +11,7 @@ export default function Dashboard() {
   const recentActivity = [
     {
       action: "New application",
-      detail: "Zaryaab Khan applied for GenAI Prototype Engineer",
+      detail: "Zaryaab Khan applied for GenAI R&D Engineer",
       time: "2 hours ago",
     },
     {

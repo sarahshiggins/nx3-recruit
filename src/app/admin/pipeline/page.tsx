@@ -44,13 +44,11 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 const JOB_LABELS: Record<string, string> = {
-  "genai-prototype-engineer": "Prototype Eng",
   "genai-rd-engineer": "R&D Eng",
   "bd-intern": "BD Intern",
 };
 
 const JOB_DOT_COLORS: Record<string, string> = {
-  "genai-prototype-engineer": "#60a5fa",
   "genai-rd-engineer": "#a78bfa",
   "bd-intern": "#f59e0b",
 };
@@ -184,7 +182,6 @@ export default function PipelinePage() {
           </span>
           {[
             { value: "all", label: "All Jobs" },
-            { value: "genai-prototype-engineer", label: "Prototype Eng" },
             { value: "genai-rd-engineer", label: "R&D Eng" },
             { value: "bd-intern", label: "BD Intern" },
           ].map((opt) => (

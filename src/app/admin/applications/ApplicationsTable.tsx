@@ -35,7 +35,6 @@ const STAGE_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 const JOB_TITLES: Record<string, string> = {
-  "genai-prototype-engineer": "GenAI Prototype Engineer",
   "genai-rd-engineer": "GenAI R&D Engineer",
   "bd-intern": "Business Development Intern",
 };

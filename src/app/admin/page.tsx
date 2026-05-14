@@ -60,7 +60,6 @@ export default async function AdminDashboard() {
   const data = await getAdminData();
 
   const jobLabels: Record<string, string> = {
-    "genai-prototype-engineer": "GenAI Prototype Engineer",
     "genai-rd-engineer": "GenAI R&D Engineer",
     "bd-intern": "BD Intern",
   };
