@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error("Supabase storage upload error:", error);
       return NextResponse.json(
-        { error: "Failed to upload file" },
+        { error: "Failed to upload file", detail: error.message || String(error) },
         { status: 500 }
       );
     }
@@ -86,10 +86,11 @@ export async function POST(req: NextRequest) {
       path: data.path,
       filename: file.name,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("Upload error:", err);
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", detail: message },
       { status: 500 }
     );
   }
