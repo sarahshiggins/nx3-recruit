@@ -98,7 +98,7 @@ export default async function AdminDashboard() {
                 Pipeline
               </p>
               <p className="text-lg font-bold text-[var(--text)] group-hover:text-white transition-colors">
-                View Kanban →
+                View Pipeline →
               </p>
             </Link>
           </div>
