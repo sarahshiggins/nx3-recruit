@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { jobs } from "@/lib/jobs";
+import ApplicationsTable from "./ApplicationsTable";
 
 type Application = {
   id: string;
@@ -147,57 +148,7 @@ export default async function ApplicationsPage({
           <p className="text-[var(--text-muted)] text-sm">No applications match this filter.</p>
         </div>
       ) : (
-        <div className="border border-[var(--border)] rounded-lg bg-[var(--card)] overflow-hidden">
-          {/* Table header */}
-          <div className="hidden md:grid grid-cols-[1fr_1fr_1.5fr_auto_auto] gap-4 px-5 py-3 border-b border-[var(--border)]">
-            {["Name", "Email", "Job", "Stage", "Applied"].map((h) => (
-              <span
-                key={h}
-                className="text-xs text-[var(--text-muted)] uppercase tracking-wider"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
-                {h}
-              </span>
-            ))}
-          </div>
-
-          {/* Rows */}
-          <div className="divide-y divide-[var(--border)]">
-            {applications.map((app) => {
-              const jobTitle = jobs.find((j) => j.slug === app.job_slug)?.title ?? app.job_slug;
-              const stageStyle = STAGE_COLORS[app.stage] ?? STAGE_COLORS["NEW"];
-              return (
-                <Link
-                  key={app.id}
-                  href={`/admin/applications/${app.id}`}
-                  className="flex flex-col md:grid md:grid-cols-[1fr_1fr_1.5fr_auto_auto] gap-1 md:gap-4 md:items-center px-5 py-4 hover:bg-[var(--card-hover)] transition-colors group"
-                >
-                  <span className="text-sm font-medium text-[var(--text)] group-hover:text-white transition-colors">
-                    {app.first_name} {app.last_name}
-                  </span>
-                  <span className="text-sm text-[var(--text-secondary)] truncate">{app.email}</span>
-                  <span className="text-sm text-[var(--text-secondary)] truncate">{jobTitle}</span>
-                  <span
-                    className="text-xs font-medium px-2 py-0.5 rounded-full w-fit"
-                    style={{ background: stageStyle.bg, color: stageStyle.color }}
-                  >
-                    {STAGE_LABELS[app.stage] ?? app.stage}
-                  </span>
-                  <span
-                    className="text-xs text-[var(--text-muted)]"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
-                    {new Date(app.applied_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+        <ApplicationsTable applications={applications} />
       )}
     </div>
   );
