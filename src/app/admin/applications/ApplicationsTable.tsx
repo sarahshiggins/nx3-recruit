@@ -47,7 +47,7 @@ export default function ApplicationsTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [bulkAction, setBulkAction] = useState<"delete" | "reject" | null>(null);
+  const [bulkAction, setBulkAction] = useState<"delete" | "reject" | "reject-silent" | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const router = useRouter();
 
@@ -115,6 +115,28 @@ export default function ApplicationsTable({
     router.refresh();
   }
 
+  async function handleBulkRejectSilent() {
+    setRejecting(true);
+
+    const ids = Array.from(selected);
+
+    // Just move to REJECTED stage, no email
+    await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/admin/applications/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stage: "REJECTED" }),
+        })
+      )
+    );
+
+    setSelected(new Set());
+    setBulkAction(null);
+    setRejecting(false);
+    router.refresh();
+  }
+
   return (
     <div>
       {/* Bulk actions bar */}
@@ -131,6 +153,12 @@ export default function ApplicationsTable({
                 className="text-xs font-medium px-3 py-1.5 rounded border border-red-800/30 text-red-400 hover:bg-red-900/15 transition-colors"
               >
                 Reject + send email
+              </button>
+              <button
+                onClick={() => setBulkAction("reject-silent")}
+                className="text-xs font-medium px-3 py-1.5 rounded border border-[var(--border)] text-[var(--text-muted)] hover:text-red-400 hover:border-red-800/30 transition-colors"
+              >
+                Reject (no email)
               </button>
               <button
                 onClick={() => setBulkAction("delete")}
@@ -154,6 +182,26 @@ export default function ApplicationsTable({
               <button
                 onClick={() => setBulkAction(null)}
                 disabled={deleting}
+                className="text-xs font-medium px-3 py-1.5 rounded border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : bulkAction === "reject-silent" ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-red-400">
+                Reject {selected.size} candidate{selected.size !== 1 ? "s" : ""} without sending email?
+              </span>
+              <button
+                onClick={handleBulkRejectSilent}
+                disabled={rejecting}
+                className="text-xs font-medium px-3 py-1.5 rounded bg-red-600 hover:bg-red-500 text-white transition-colors disabled:opacity-50"
+              >
+                {rejecting ? "Rejecting…" : "Confirm"}
+              </button>
+              <button
+                onClick={() => setBulkAction(null)}
+                disabled={rejecting}
                 className="text-xs font-medium px-3 py-1.5 rounded border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors"
               >
                 Cancel
