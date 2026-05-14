@@ -260,7 +260,7 @@ function CreateJobForm({ onCreated, onCancel }: { onCreated: () => void; onCance
             <label className="font-[family-name:var(--font-mono)] text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">Status</label>
             <select
               value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              onChange={(e) => setForm({ ...form, status: e.target.value as "OPEN" | "DRAFT" | "CLOSED" })}
               className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text)] focus:border-[var(--accent)] focus:outline-none transition-colors"
             >
               <option value="OPEN">Open</option>
@@ -456,7 +456,7 @@ function EditJobForm({ job, onSaved, onCancel }: { job: Job; onSaved: () => void
           </div>
           <div>
             <label className="font-[family-name:var(--font-mono)] text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">Status</label>
-            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text)] focus:border-[var(--accent)] focus:outline-none transition-colors">
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as "OPEN" | "DRAFT" | "CLOSED" })} className="w-full bg-[var(--bg)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text)] focus:border-[var(--accent)] focus:outline-none transition-colors">
               <option value="OPEN">Open</option>
               <option value="DRAFT">Draft</option>
               <option value="CLOSED">Closed</option>
