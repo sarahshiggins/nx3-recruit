@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { jobs } from "@/lib/jobs";
+import { getJobBySlug } from "@/lib/jobs-db";
 import StageSelector from "./StageSelector";
 import NotesEditor from "./NotesEditor";
 import DeleteButton from "./DeleteButton";
@@ -85,29 +85,41 @@ export default async function ApplicationDetailPage({
     notFound();
   }
 
-  const job = jobs.find((j) => j.slug === app.job_slug);
+  const job = await getJobBySlug(app.job_slug);
   const stageStyle = STAGE_COLORS[app.stage] ?? STAGE_COLORS["NEW"];
 
   // Build screening Q&A pairs
+  // Match answers to questions by ID, and fall back to positional matching
+  // (handles Recooty-migrated data where keys are q1, q2, q3)
   const screeningQA: { question: string; answer: string }[] = [];
-  if (app.screening_answers && job?.screeningQuestions) {
-    for (const sq of job.screeningQuestions) {
-      const answer = app.screening_answers[sq.id];
+  if (app.screening_answers) {
+    const answers = app.screening_answers;
+    const questions = job?.screeningQuestions || [];
+
+    // First try matching by ID
+    const matchedIds = new Set<string>();
+    for (const sq of questions) {
+      const answer = answers[sq.id];
       if (answer !== undefined && answer !== null && answer !== "") {
         screeningQA.push({ question: sq.question, answer: String(answer) });
+        matchedIds.add(sq.id);
       }
     }
-    // Also include any keys not in the job questions (for forward-compat)
-    const knownIds = new Set(job.screeningQuestions.map((q) => q.id));
-    for (const [k, v] of Object.entries(app.screening_answers)) {
-      if (!knownIds.has(k) && v) {
-        screeningQA.push({ question: k, answer: String(v) });
-      }
-    }
-  } else if (app.screening_answers) {
-    // No job questions, just show key-value pairs
-    for (const [k, v] of Object.entries(app.screening_answers)) {
-      if (v) screeningQA.push({ question: k, answer: String(v) });
+
+    // For any remaining answers not matched by ID, try positional matching
+    const unmatchedAnswers = Object.entries(answers)
+      .filter(([k, v]) => !matchedIds.has(k) && v)
+      .sort(([a], [b]) => a.localeCompare(b));
+
+    // Match unmatched answers to unmatched questions by position
+    const unmatchedQuestions = questions.filter((q) => !matchedIds.has(q.id));
+    for (let i = 0; i < unmatchedAnswers.length; i++) {
+      const [key, value] = unmatchedAnswers[i];
+      const question = unmatchedQuestions[i];
+      screeningQA.push({
+        question: question?.question || key,
+        answer: String(value),
+      });
     }
   }
 
