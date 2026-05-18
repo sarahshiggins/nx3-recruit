@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { getJobBySlug } from "@/lib/jobs-db";
+import { formatSlug } from "@/lib/format-job-title";
 import StageSelector from "./StageSelector";
 import NotesEditor from "./NotesEditor";
 import DeleteButton from "./DeleteButton";
@@ -142,7 +143,7 @@ export default async function ApplicationDetailPage({
           <p className="text-[var(--text-muted)] text-sm mt-1">
             Applied for{" "}
             <span className="text-[var(--text-secondary)]">
-              {job?.title ?? app.job_slug}
+              {job?.title ?? formatSlug(app.job_slug)}
             </span>{" "}
             ·{" "}
             <span style={{ fontFamily: "var(--font-mono)" }}>
@@ -240,7 +241,7 @@ export default async function ApplicationDetailPage({
             <h2 className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-4" style={{ fontFamily: "var(--font-mono)" }}>
               Job
             </h2>
-            <p className="text-sm font-medium text-[var(--text)]">{job?.title ?? app.job_slug}</p>
+            <p className="text-sm font-medium text-[var(--text)]">{job?.title ?? formatSlug(app.job_slug)}</p>
             {job && (
               <p className="text-xs text-[var(--text-muted)] mt-1">{job.department} · {job.type}</p>
             )}
@@ -248,7 +249,7 @@ export default async function ApplicationDetailPage({
               href={`/admin/applications?job=${app.job_slug}`}
               className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors mt-3 inline-block"
             >
-              View all {job?.title ?? app.job_slug} applicants →
+              View all {job?.title ?? formatSlug(app.job_slug)} applicants →
             </a>
           </section>
 

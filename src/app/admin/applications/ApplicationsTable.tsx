@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getJobTitle } from "@/lib/format-job-title";
 
 type Application = {
   id: string;
@@ -33,14 +34,6 @@ const STAGE_COLORS: Record<string, { bg: string; color: string }> = {
   HIRED: { bg: "rgba(22,163,74,0.15)", color: "#4ade80" },
   REJECTED: { bg: "rgba(220,38,38,0.15)", color: "#f87171" },
 };
-
-// Job titles are derived from the slug if not in our known list
-function getJobTitle(slug: string): string {
-  return slug
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 export default function ApplicationsTable({
   applications,

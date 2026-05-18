@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { jobs } from "@/lib/jobs";
+import { getJobTitle } from "@/lib/format-job-title";
 
 function getStageBadge(stage: string) {
   const map: Record<string, { label: string; color: string }> = {
@@ -15,11 +16,6 @@ function getStageBadge(stage: string) {
     REJECTED: { label: "Rejected", color: "#dc2626" },
   };
   return map[stage] ?? { label: stage, color: "#6a6a7a" };
-}
-
-function getJobTitle(slug: string) {
-  const job = jobs.find((j) => j.slug === slug);
-  return job?.title ?? slug;
 }
 
 async function getAdminData() {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { formatSlug } from "@/lib/format-job-title";
 
 type Application = {
   id: string;
@@ -95,7 +96,11 @@ export default function PipelinePage() {
     applications.forEach((a) => {
       if (!lookup[a.job_slug]) {
         const idx = Object.keys(lookup).length;
-        lookup[a.job_slug] = { label: a.job_slug, color: DOT_COLORS[idx % DOT_COLORS.length] };
+        const shortLabel = formatSlug(a.job_slug)
+          .replace(/^GenAI\s*/i, "")
+          .replace(/^Business Development\s*/i, "BD ")
+          .trim();
+        lookup[a.job_slug] = { label: shortLabel, color: DOT_COLORS[idx % DOT_COLORS.length] };
       }
     });
     return lookup;
