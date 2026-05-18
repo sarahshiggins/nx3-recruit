@@ -24,6 +24,7 @@ const STATUS_YELLOW = {
 };
 
 const FEED_BASE = "https://nx3-recruit.vercel.app";
+const JSON_API_URL = `${FEED_BASE}/api/jobs`;
 
 const BOARDS: Board[] = [
   {
@@ -59,6 +60,50 @@ const BOARDS: Board[] = [
       "Already live via JSON-LD structured data on each job page. Google crawls our careers site directly — no feed submission required.",
   },
   {
+    key: "jooble",
+    name: "Jooble",
+    color: "#1a73e8",
+    initials: "Jo",
+    status: "Feed Ready",
+    statusColor: STATUS_GREEN,
+    feedUrl: `${FEED_BASE}/api/feed/jooble`,
+    description:
+      "Free — 69 countries. Submit the feed URL via Jooble's employer portal to syndicate openings across its global aggregator network.",
+  },
+  {
+    key: "jora",
+    name: "Jora",
+    color: "#00b8a9",
+    initials: "Jr",
+    status: "Feed Ready",
+    statusColor: STATUS_GREEN,
+    feedUrl: `${FEED_BASE}/api/feed/jora`,
+    description:
+      "Free + paid promotions — 25 countries. Submit the RSS feed URL through Jora's employer onboarding to have postings ingested automatically.",
+  },
+  {
+    key: "postjobfree",
+    name: "PostJobFree",
+    color: "#f97316",
+    initials: "PJF",
+    status: "Feed Ready",
+    statusColor: STATUS_GREEN,
+    feedUrl: `${FEED_BASE}/api/feed/postjobfree`,
+    description:
+      "Free. Submit the feed URL once via PostJobFree's employer settings — they ingest the standard Indeed-style XML format.",
+  },
+  {
+    key: "careerjet",
+    name: "CareerJet",
+    color: "#0ea5e9",
+    initials: "CJ",
+    status: "Feed Ready",
+    statusColor: STATUS_GREEN,
+    feedUrl: `${FEED_BASE}/api/feed/careerjet`,
+    description:
+      "Free — 100+ countries. CareerJet aggregates jobs globally; submit the feed URL via their partner signup to have openings indexed.",
+  },
+  {
     key: "linkedin",
     name: "LinkedIn",
     color: "#0a66c2",
@@ -66,6 +111,35 @@ const BOARDS: Board[] = [
     status: "Manual",
     statusColor: STATUS_YELLOW,
     description: "Post manually with link to careers page.",
+  },
+  {
+    key: "wellfound",
+    name: "Wellfound",
+    color: "#000000",
+    initials: "W",
+    status: "Manual",
+    statusColor: STATUS_YELLOW,
+    description:
+      "Free unlimited — startup-focused, 10M+ candidates. Post manually via the Wellfound (formerly AngelList Talent) employer dashboard.",
+  },
+  {
+    key: "ai-jobs",
+    name: "AI Jobs",
+    color: "#7c3aed",
+    initials: "AI",
+    status: "Manual",
+    statusColor: STATUS_YELLOW,
+    description: "AI/ML niche board. Post manually with link to careers page.",
+  },
+  {
+    key: "braintrust",
+    name: "Braintrust",
+    color: "#facc15",
+    initials: "Bt",
+    status: "Manual",
+    statusColor: STATUS_YELLOW,
+    description:
+      "Free AI/ML board. Post manually via the Braintrust employer console — pulls from a talent network of vetted AI/ML candidates.",
   },
 ];
 
@@ -172,6 +246,51 @@ export default async function SyndicationPage() {
         <p className="text-[var(--text-muted)] text-sm mt-1">
           Distribute your job postings across major job boards
         </p>
+      </div>
+
+      <div className="mb-10">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="text-base font-semibold text-[var(--text)]">Public API</h2>
+          <span
+            className="text-xs font-medium px-2 py-0.5 rounded-full"
+            style={{ background: STATUS_GREEN.bg, color: STATUS_GREEN.color }}
+          >
+            Live
+          </span>
+        </div>
+        <div className="border border-[var(--border)] rounded-lg bg-[var(--card)] p-5 flex flex-col gap-4">
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+            Public JSON endpoint for all open jobs. CORS-enabled, cached for one
+            hour, and suitable for embedding listings on partner sites, the
+            marketing site, or third-party career aggregators.
+          </p>
+          <div>
+            <p
+              className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1.5"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              Endpoint
+            </p>
+            <div className="flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] rounded px-3 py-2">
+              <code
+                className="font-[family-name:var(--font-mono)] text-xs text-[var(--text-secondary)] truncate flex-1"
+                title={JSON_API_URL}
+              >
+                {JSON_API_URL}
+              </code>
+              <CopyButton value={JSON_API_URL} />
+              <a
+                href={JSON_API_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors px-1"
+                title="Open endpoint"
+              >
+                ↗
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
