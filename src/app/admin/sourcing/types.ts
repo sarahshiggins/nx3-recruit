@@ -29,6 +29,8 @@ export type SearchResponse = {
   query: string;
   page: number;
   total_count: number;
+  shown_count?: number;
+  activity_filtered?: boolean;
   results: GitHubResult[];
   rate_limit: {
     remaining: number | null;

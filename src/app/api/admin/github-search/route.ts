@@ -277,7 +277,9 @@ export async function GET(req: NextRequest) {
     {
       query,
       page,
-      total_count: activeSince ? filtered.length : searchJson.total_count,
+      total_count: searchJson.total_count,
+      shown_count: filtered.length,
+      activity_filtered: !!activeSince,
       incomplete_results: searchJson.incomplete_results,
       results: filtered,
       rate_limit: {

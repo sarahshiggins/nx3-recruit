@@ -218,7 +218,9 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
           <div className="md:col-span-2 flex items-end justify-between gap-3">
             <p className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
               {data
-                ? `${data.total_count.toLocaleString()} matches · page ${data.page}`
+                ? data.activity_filtered
+                  ? `${data.shown_count} active of ${data.total_count.toLocaleString()} matches · page ${data.page}`
+                  : `${data.total_count.toLocaleString()} matches · page ${data.page}`
                 : "—"}
               {data?.rate_limit?.remaining !== null &&
                 data?.rate_limit?.remaining !== undefined && (
