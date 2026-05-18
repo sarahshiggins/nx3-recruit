@@ -281,7 +281,8 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
             ← Previous
           </button>
           <span className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
-            Page {page}
+            Page {page} of {Math.min(Math.ceil(Math.min(totalCount, 1000) / 10), 100)}{" "}
+            <span className="text-[var(--text-muted)]/60">({totalCount.toLocaleString()} results)</span>
           </span>
           <button
             disabled={
