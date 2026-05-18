@@ -45,6 +45,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               >
                 Syndication
               </Link>
+              <Link
+                href="/admin/sourcing"
+                className="text-sm text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors"
+              >
+                Sourcing
+              </Link>
             </div>
           </div>
           <div className="flex items-center gap-4">

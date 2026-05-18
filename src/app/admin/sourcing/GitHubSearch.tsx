@@ -1,0 +1,486 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  GitHubResult,
+  SearchResponse,
+  SourcedCandidate,
+  LANGUAGES,
+  TOPICS,
+} from "./types";
+
+export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
+  const [q, setQ] = useState("");
+  const [location, setLocation] = useState("Chicago");
+  const [language, setLanguage] = useState("Any");
+  const [topic, setTopic] = useState("Any");
+  const [page, setPage] = useState(1);
+
+  const [data, setData] = useState<SearchResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [rateLimited, setRateLimited] = useState<{ reset: string | null } | null>(
+    null
+  );
+
+  const [addedUsernames, setAddedUsernames] = useState<Set<string>>(new Set());
+  const [addingUsername, setAddingUsername] = useState<string | null>(null);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstRender = useRef(true);
+
+  const runSearch = useCallback(
+    async (targetPage: number) => {
+      setLoading(true);
+      setError(null);
+      setRateLimited(null);
+
+      const params = new URLSearchParams();
+      if (q.trim()) params.set("q", q.trim());
+      if (location.trim()) params.set("location", location.trim());
+      if (language && language !== "Any") params.set("language", language);
+      if (topic && topic !== "Any") params.set("topic", topic);
+      params.set("page", String(targetPage));
+
+      try {
+        const res = await fetch(`/api/admin/github-search?${params.toString()}`);
+        const json = await res.json();
+        if (res.status === 429 || json?.rateLimit) {
+          setRateLimited({ reset: json?.resetAt ?? null });
+          setData(null);
+        } else if (!res.ok) {
+          setError(json?.error || `Search failed (${res.status})`);
+          setData(null);
+        } else {
+          setData(json);
+        }
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [q, location, language, topic]
+  );
+
+  useEffect(() => {
+    runSearch(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (isFirstRender.current) return;
+    runSearch(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (page !== 1) setPage(1);
+      else runSearch(1);
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, location, language, topic]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const all = new Set<string>();
+        for (let p = 1; p <= 5; p++) {
+          const res = await fetch(`/api/admin/sourced-candidates?page=${p}`);
+          if (!res.ok) break;
+          const json = await res.json();
+          const candidates: SourcedCandidate[] = json.candidates ?? [];
+          for (const c of candidates) all.add(c.github_username.toLowerCase());
+          if (candidates.length < 20) break;
+        }
+        if (!cancelled) setAddedUsernames(all);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (page !== 1) setPage(1);
+    else runSearch(1);
+  }
+
+  async function addToPipeline(user: GitHubResult) {
+    setAddingUsername(user.username);
+    try {
+      const res = await fetch("/api/admin/sourced-candidates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          github_username: user.username,
+          github_url: user.html_url,
+          name: user.name,
+          email: user.email,
+          bio: user.bio,
+          location: user.location,
+          company: user.company,
+          avatar_url: user.avatar_url,
+          profile_data: {
+            public_repos: user.public_repos,
+            followers: user.followers,
+            following: user.following,
+            twitter_username: user.twitter_username,
+            blog: user.blog,
+            hireable: user.hireable,
+            created_at: user.created_at,
+          },
+          top_repos: user.top_repos,
+          matched_job_slugs: [],
+        }),
+      });
+
+      if (res.ok || res.status === 409) {
+        setAddedUsernames((prev) => {
+          const next = new Set(prev);
+          next.add(user.username.toLowerCase());
+          return next;
+        });
+        onAdded();
+      } else {
+        const json = await res.json().catch(() => ({}));
+        alert(json?.error || `Failed to add (${res.status})`);
+      }
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setAddingUsername(null);
+    }
+  }
+
+  const totalCount = data?.total_count ?? 0;
+  const showPagination = totalCount > 10;
+
+  return (
+    <section>
+      <form
+        onSubmit={handleSubmit}
+        className="border border-[var(--border)] rounded-lg bg-[var(--card)] p-5 mb-6"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="md:col-span-2">
+            <LabeledInput
+              label="Search GitHub"
+              value={q}
+              onChange={setQ}
+              placeholder="Search GitHub..."
+            />
+          </div>
+          <LabeledInput
+            label="Location"
+            value={location}
+            onChange={setLocation}
+            placeholder="e.g. Chicago"
+          />
+          <LabeledSelect
+            label="Language"
+            value={language}
+            onChange={setLanguage}
+            options={LANGUAGES}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+          <LabeledSelect
+            label="Topic"
+            value={topic}
+            onChange={setTopic}
+            options={TOPICS}
+          />
+          <div className="md:col-span-3 flex items-end justify-between gap-3">
+            <p className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
+              {data
+                ? `${data.total_count.toLocaleString()} matches · page ${data.page}`
+                : "—"}
+              {data?.rate_limit?.remaining !== null &&
+                data?.rate_limit?.remaining !== undefined && (
+                  <span className="ml-3 opacity-70">
+                    rate: {data.rate_limit.remaining} left
+                    {data.rate_limit.authenticated ? "" : " (anon)"}
+                  </span>
+                )}
+            </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? "Searching..." : "Search"}
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {rateLimited && (
+        <div className="mb-6 border border-amber-700/40 bg-amber-900/10 rounded-md px-4 py-3 text-sm text-amber-200">
+          GitHub API rate limit exceeded.
+          {rateLimited.reset && (
+            <span className="ml-1 opacity-80">
+              Resets at {new Date(rateLimited.reset).toLocaleTimeString()}.
+            </span>
+          )}{" "}
+          <span className="opacity-80">
+            Set <code className="font-[family-name:var(--font-mono)]">GITHUB_TOKEN</code> to raise the limit to 5000/hr.
+          </span>
+        </div>
+      )}
+      {error && (
+        <div className="mb-6 border border-red-700/40 bg-red-900/10 rounded-md px-4 py-3 text-sm text-red-200">
+          {error}
+        </div>
+      )}
+
+      {loading && !data ? (
+        <SkeletonGrid />
+      ) : data && data.results.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {data.results.map((user) => {
+            const added = addedUsernames.has(user.username.toLowerCase());
+            return (
+              <ResultCard
+                key={user.username}
+                user={user}
+                added={added}
+                adding={addingUsername === user.username}
+                onAdd={() => addToPipeline(user)}
+              />
+            );
+          })}
+        </div>
+      ) : data && data.results.length === 0 ? (
+        <div className="border border-dashed border-[var(--border)] rounded-lg p-10 text-center">
+          <p className="text-sm text-[var(--text-muted)]">No GitHub users matched.</p>
+        </div>
+      ) : null}
+
+      {showPagination && (
+        <div className="mt-6 flex items-center justify-between">
+          <button
+            disabled={page <= 1 || loading}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="px-3 py-1.5 text-sm rounded-md border border-[var(--border)] hover:border-[var(--border-hover)] text-[var(--text-secondary)] disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            ← Previous
+          </button>
+          <span className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
+            Page {page}
+          </span>
+          <button
+            disabled={
+              loading ||
+              !data ||
+              data.results.length < 10 ||
+              page * 10 >= Math.min(totalCount, 1000)
+            }
+            onClick={() => setPage((p) => p + 1)}
+            className="px-3 py-1.5 text-sm rounded-md border border-[var(--border)] hover:border-[var(--border-hover)] text-[var(--text-secondary)] disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            Next →
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function LabeledInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs uppercase tracking-wider text-[var(--text-muted)] mb-1.5 font-[family-name:var(--font-mono)]">
+        {label}
+      </label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-md px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border-hover)]"
+      />
+    </div>
+  );
+}
+
+function LabeledSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <div>
+      <label className="block text-xs uppercase tracking-wider text-[var(--text-muted)] mb-1.5 font-[family-name:var(--font-mono)]">
+        {label}
+      </label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-md px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--border-hover)]"
+      >
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="border border-[var(--border)] rounded-lg bg-[var(--card)] p-5"
+        >
+          <div className="flex gap-3 items-start">
+            <div className="w-12 h-12 rounded-full bg-[var(--border)] animate-pulse" />
+            <div className="flex-1">
+              <div className="h-4 w-32 bg-[var(--border)] rounded animate-pulse mb-2" />
+              <div className="h-3 w-24 bg-[var(--border)] rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="h-3 w-full bg-[var(--border)] rounded animate-pulse" />
+            <div className="h-3 w-3/4 bg-[var(--border)] rounded animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ResultCard({
+  user,
+  added,
+  adding,
+  onAdd,
+}: {
+  user: GitHubResult;
+  added: boolean;
+  adding: boolean;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="border border-[var(--border)] rounded-lg bg-[var(--card)] p-5 hover:bg-[var(--card-hover)] transition-colors flex flex-col">
+      <div className="flex items-start gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={user.avatar_url}
+          alt={user.username}
+          width={48}
+          height={48}
+          className="w-12 h-12 rounded-full bg-[var(--bg)] shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <a
+            href={user.html_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-sm text-[var(--text)] hover:text-white transition-colors truncate block"
+          >
+            {user.name || user.username}
+          </a>
+          <a
+            href={user.html_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)] hover:text-[var(--text-secondary)] truncate block"
+          >
+            @{user.username}
+          </a>
+        </div>
+      </div>
+
+      {user.bio && (
+        <p
+          className="mt-3 text-sm text-[var(--text-secondary)] overflow-hidden"
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+          }}
+        >
+          {user.bio}
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
+        {user.location && <span>📍 {user.location}</span>}
+        {user.company && <span>🏢 {user.company}</span>}
+        <span>📦 {user.public_repos} repos</span>
+        <span>👥 {user.followers} followers</span>
+      </div>
+
+      {user.top_repos && user.top_repos.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {user.top_repos.map((repo) => (
+            <a
+              key={repo.name}
+              href={repo.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between text-xs border border-[var(--border)] rounded px-2 py-1.5 hover:border-[var(--border-hover)] hover:bg-[var(--bg)] transition-colors"
+            >
+              <span className="font-medium text-[var(--text)] truncate">
+                {repo.name}
+              </span>
+              <span className="text-[var(--text-muted)] font-[family-name:var(--font-mono)] shrink-0 ml-2">
+                {repo.language && <span className="mr-2">{repo.language}</span>}
+                ★ {repo.stargazers_count}
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-end">
+        <button
+          disabled={added || adding}
+          onClick={onAdd}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            added
+              ? "bg-[var(--border)] text-[var(--text-muted)] cursor-not-allowed"
+              : "bg-emerald-600/90 hover:bg-emerald-500 text-white disabled:opacity-50"
+          }`}
+        >
+          {added ? "Added ✓" : adding ? "Adding..." : "Add to Pipeline"}
+        </button>
+      </div>
+    </div>
+  );
+}
