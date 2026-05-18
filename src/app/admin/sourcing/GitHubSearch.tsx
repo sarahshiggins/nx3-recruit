@@ -223,10 +223,10 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
                   : `${data.total_count.toLocaleString()} matches · page ${data.page}`
                 : "—"}
               {data?.rate_limit?.remaining !== null &&
-                data?.rate_limit?.remaining !== undefined && (
-                  <span className="ml-3 opacity-70">
-                    rate: {data.rate_limit.remaining} left
-                    {data.rate_limit.authenticated ? "" : " (anon)"}
+                data?.rate_limit?.remaining !== undefined &&
+                data.rate_limit.remaining < 5 && (
+                  <span className="ml-3 text-[#f87171]">
+                    ⚠ API limit low ({data.rate_limit.remaining} left)
                   </span>
                 )}
             </p>
