@@ -39,6 +39,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               >
                 Jobs
               </Link>
+              <Link
+                href="/admin/syndication"
+                className="text-sm text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors"
+              >
+                Syndication
+              </Link>
             </div>
           </div>
           <div className="flex items-center gap-4">
