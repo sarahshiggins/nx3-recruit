@@ -25,6 +25,7 @@ type GitHubUser = {
   followers: number;
   following: number;
   created_at: string;
+  updated_at: string;
   twitter_username: string | null;
   hireable: boolean | null;
 };
@@ -54,6 +55,7 @@ type EnrichedUser = {
   followers: number;
   following: number;
   created_at: string;
+  updated_at: string | null;
   twitter_username: string | null;
   hireable: boolean | null;
   blog: string | null;
@@ -130,6 +132,7 @@ export async function GET(req: NextRequest) {
   const location = searchParams.get("location") || "";
   const language = searchParams.get("language") || "";
   const topic = searchParams.get("topic") || "";
+  const activeSince = searchParams.get("active_since") || "";
   const pageStr = searchParams.get("page") || "1";
   const page = Math.max(1, parseInt(pageStr, 10) || 1);
 
@@ -197,6 +200,7 @@ export async function GET(req: NextRequest) {
         followers: 0,
         following: 0,
         created_at: "",
+        updated_at: null,
         twitter_username: null,
         hireable: null,
         blog: null,
@@ -232,6 +236,7 @@ export async function GET(req: NextRequest) {
           followers: user.followers,
           following: user.following,
           created_at: user.created_at,
+          updated_at: user.updated_at ?? null,
           twitter_username: user.twitter_username,
           hireable: user.hireable,
           blog: user.blog,
@@ -253,6 +258,18 @@ export async function GET(req: NextRequest) {
     })
   );
 
+  // Filter by activity if requested
+  let filtered = enriched;
+  if (activeSince) {
+    const days = parseInt(activeSince, 10);
+    if (!isNaN(days) && days > 0) {
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      filtered = enriched.filter(
+        (u) => u.updated_at && u.updated_at >= cutoff
+      );
+    }
+  }
+
   const remaining = searchRes.headers.get("x-ratelimit-remaining");
   const reset = searchRes.headers.get("x-ratelimit-reset");
 
@@ -260,9 +277,9 @@ export async function GET(req: NextRequest) {
     {
       query,
       page,
-      total_count: searchJson.total_count,
+      total_count: activeSince ? filtered.length : searchJson.total_count,
       incomplete_results: searchJson.incomplete_results,
-      results: enriched,
+      results: filtered,
       rate_limit: {
         remaining: remaining ? parseInt(remaining, 10) : null,
         reset_at: reset

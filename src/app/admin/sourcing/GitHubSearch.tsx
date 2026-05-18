@@ -7,6 +7,7 @@ import {
   SourcedCandidate,
   LANGUAGES,
   TOPICS,
+  ACTIVITY_FILTERS,
 } from "./types";
 
 export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
@@ -14,6 +15,7 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
   const [location, setLocation] = useState("Chicago");
   const [language, setLanguage] = useState("Any");
   const [topic, setTopic] = useState("Any");
+  const [activeSince, setActiveSince] = useState("");
   const [page, setPage] = useState(1);
 
   const [data, setData] = useState<SearchResponse | null>(null);
@@ -40,6 +42,7 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
       if (location.trim()) params.set("location", location.trim());
       if (language && language !== "Any") params.set("language", language);
       if (topic && topic !== "Any") params.set("topic", topic);
+      if (activeSince) params.set("active_since", activeSince);
       params.set("page", String(targetPage));
 
       try {
@@ -205,7 +208,14 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
             onChange={setTopic}
             options={TOPICS}
           />
-          <div className="md:col-span-3 flex items-end justify-between gap-3">
+          <LabeledSelect
+            label="Active Since"
+            value={activeSince}
+            onChange={setActiveSince}
+            options={ACTIVITY_FILTERS.map((f) => f.value)}
+            displayOptions={ACTIVITY_FILTERS.map((f) => f.label)}
+          />
+          <div className="md:col-span-2 flex items-end justify-between gap-3">
             <p className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
               {data
                 ? `${data.total_count.toLocaleString()} matches · page ${data.page}`
@@ -302,6 +312,18 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
   );
 }
 
+function formatTimeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const days = Math.floor((now - then) / (1000 * 60 * 60 * 24));
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+}
+
 function LabeledInput({
   label,
   value,
@@ -334,11 +356,13 @@ function LabeledSelect({
   value,
   onChange,
   options,
+  displayOptions,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  displayOptions?: string[];
 }) {
   return (
     <div>
@@ -350,9 +374,9 @@ function LabeledSelect({
         onChange={(e) => onChange(e.target.value)}
         className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-md px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--border-hover)]"
       >
-        {options.map((o) => (
+        {options.map((o, i) => (
           <option key={o} value={o}>
-            {o}
+            {displayOptions ? displayOptions[i] : o}
           </option>
         ))}
       </select>
@@ -445,6 +469,11 @@ function ResultCard({
         {user.company && <span>🏢 {user.company}</span>}
         <span>📦 {user.public_repos} repos</span>
         <span>👥 {user.followers} followers</span>
+        {user.updated_at && (
+          <span title={`Last activity: ${new Date(user.updated_at).toLocaleDateString()}`}>
+            ⚡ {formatTimeAgo(user.updated_at)}
+          </span>
+        )}
       </div>
 
       {user.top_repos && user.top_repos.length > 0 && (
