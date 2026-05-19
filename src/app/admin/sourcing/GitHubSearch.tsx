@@ -217,9 +217,11 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
           <div className="md:col-span-2 flex items-end justify-between gap-3">
             <p className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
               {hasSearched && resultCount > 0
-                ? totalAvailable > resultCount
-                  ? `Showing ${resultCount} of ${totalAvailable.toLocaleString()}`
-                  : `${resultCount} result${resultCount === 1 ? "" : "s"}`
+                ? activeSince
+                  ? `${resultCount} active developer${resultCount === 1 ? "" : "s"} found`
+                  : totalAvailable > resultCount
+                    ? `Showing ${resultCount} of ${totalAvailable.toLocaleString()}`
+                    : `${resultCount} result${resultCount === 1 ? "" : "s"}`
                 : ""}
             </p>
             <button
@@ -283,7 +285,7 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
                 onClick={loadMore}
                 className="px-6 py-2.5 text-sm font-medium rounded-md border border-[var(--border)] hover:border-[var(--border-hover)] hover:bg-[var(--card-hover)] text-[var(--text-secondary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loadingMore ? "Loading more..." : `Load More (${totalAvailable.toLocaleString()} total)`}
+                {loadingMore ? "Loading more..." : "Load More"}
               </button>
             </div>
           )}
