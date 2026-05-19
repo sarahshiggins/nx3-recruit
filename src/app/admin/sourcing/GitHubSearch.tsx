@@ -476,11 +476,11 @@ function ResultCard({
           <span title={`Last code push: ${new Date(user.last_push_at).toLocaleDateString()}`}>
             ⚡ pushed {formatTimeAgo(user.last_push_at)}
           </span>
-        ) : (
-          <span className="opacity-50" title="No recent public push events">
-            ⚡ no recent pushes
+        ) : user.updated_at ? (
+          <span className="opacity-70" title={`Profile active: ${new Date(user.updated_at).toLocaleDateString()}`}>
+            ⚡ active {formatTimeAgo(user.updated_at)}
           </span>
-        )}
+        ) : null}
       </div>
 
       {user.top_repos && user.top_repos.length > 0 && (

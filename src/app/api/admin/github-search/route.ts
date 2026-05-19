@@ -288,9 +288,13 @@ export async function GET(req: NextRequest) {
     const days = parseInt(activeSince, 10);
     if (!isNaN(days) && days > 0) {
       const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-      filtered = enriched.filter(
-        (u) => u.last_push_at && u.last_push_at >= cutoff
-      );
+      filtered = enriched.filter((u) => {
+        // Use last_push_at if available (most accurate)
+        if (u.last_push_at) return u.last_push_at >= cutoff;
+        // Fall back to updated_at (less precise but catches private repo activity)
+        if (u.updated_at) return u.updated_at >= cutoff;
+        return false;
+      });
     }
   }
 
