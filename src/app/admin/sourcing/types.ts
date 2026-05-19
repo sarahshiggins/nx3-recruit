@@ -103,16 +103,16 @@ export const ACTIVITY_FILTERS = [
 ];
 
 export const TOPICS = [
-  "Any",
-  "llm",
-  "machine-learning",
-  "artificial-intelligence",
-  "deep-learning",
-  "agents",
-  "rag",
-  "knowledge-graph",
-  "nlp",
-  "computer-vision",
+  { value: "Any", label: "Any" },
+  { value: "llm", label: "LLM" },
+  { value: "machine-learning", label: "Machine Learning" },
+  { value: "artificial-intelligence", label: "Artificial Intelligence" },
+  { value: "deep-learning", label: "Deep Learning" },
+  { value: "agents", label: "Agents" },
+  { value: "rag", label: "RAG" },
+  { value: "knowledge-graph", label: "Knowledge Graph" },
+  { value: "nlp", label: "NLP" },
+  { value: "computer-vision", label: "Computer Vision" },
 ];
 
 export const FILTER_TABS: { key: "ALL" | Status; label: string }[] = [

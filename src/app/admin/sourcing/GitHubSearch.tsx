@@ -206,7 +206,8 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
             label="Topic"
             value={topic}
             onChange={setTopic}
-            options={TOPICS}
+            options={TOPICS.map((t) => t.value)}
+            displayOptions={TOPICS.map((t) => t.label)}
           />
           <LabeledSelect
             label="Active Since"
