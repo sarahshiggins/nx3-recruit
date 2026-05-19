@@ -56,6 +56,7 @@ type EnrichedUser = {
   following: number;
   created_at: string;
   updated_at: string | null;
+  last_push_at: string | null;
   twitter_username: string | null;
   hireable: boolean | null;
   blog: string | null;
@@ -209,6 +210,7 @@ export async function GET(req: NextRequest) {
         following: 0,
         created_at: "",
         updated_at: null,
+        last_push_at: null,
         twitter_username: null,
         hireable: null,
         blog: null,
@@ -216,10 +218,13 @@ export async function GET(req: NextRequest) {
       };
 
       try {
-        const [userRes, reposRes] = await Promise.all([
+        const [userRes, reposRes, eventsRes] = await Promise.all([
           ghFetch(`${GITHUB_API}/users/${encodeURIComponent(item.login)}`),
           ghFetch(
             `${GITHUB_API}/users/${encodeURIComponent(item.login)}/repos?sort=stars&direction=desc&per_page=3&type=owner`
+          ),
+          ghFetch(
+            `${GITHUB_API}/users/${encodeURIComponent(item.login)}/events/public?per_page=10`
           ),
         ]);
 
@@ -229,6 +234,16 @@ export async function GET(req: NextRequest) {
         let repos: GitHubRepo[] = [];
         if (reposRes.ok) {
           repos = (await reposRes.json()) as GitHubRepo[];
+        }
+
+        // Find last push event from public events
+        let lastPush: string | null = null;
+        if (eventsRes.ok) {
+          const events = (await eventsRes.json()) as { type: string; created_at: string }[];
+          const pushEvent = events.find((e) => e.type === "PushEvent");
+          if (pushEvent) {
+            lastPush = pushEvent.created_at;
+          }
         }
 
         return {
@@ -245,6 +260,7 @@ export async function GET(req: NextRequest) {
           following: user.following,
           created_at: user.created_at,
           updated_at: user.updated_at ?? null,
+          last_push_at: lastPush,
           twitter_username: user.twitter_username,
           hireable: user.hireable,
           blog: user.blog,
@@ -273,7 +289,7 @@ export async function GET(req: NextRequest) {
     if (!isNaN(days) && days > 0) {
       const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
       filtered = enriched.filter(
-        (u) => u.updated_at && u.updated_at >= cutoff
+        (u) => u.last_push_at && u.last_push_at >= cutoff
       );
     }
   }

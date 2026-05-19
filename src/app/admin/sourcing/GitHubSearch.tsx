@@ -472,9 +472,13 @@ function ResultCard({
         {user.company && <span>🏢 {user.company}</span>}
         <span>📦 {user.public_repos} repos</span>
         <span>👥 {user.followers} followers</span>
-        {user.updated_at && (
-          <span title={`Last activity: ${new Date(user.updated_at).toLocaleDateString()}`}>
-            ⚡ {formatTimeAgo(user.updated_at)}
+        {user.last_push_at ? (
+          <span title={`Last code push: ${new Date(user.last_push_at).toLocaleDateString()}`}>
+            ⚡ pushed {formatTimeAgo(user.last_push_at)}
+          </span>
+        ) : (
+          <span className="opacity-50" title="No recent public push events">
+            ⚡ no recent pushes
           </span>
         )}
       </div>

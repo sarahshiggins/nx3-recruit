@@ -15,6 +15,7 @@ export type GitHubResult = {
   hireable: boolean | null;
   blog: string | null;
   updated_at: string | null;
+  last_push_at: string | null;
   top_repos: {
     name: string;
     description: string | null;
