@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   GitHubResult,
-  SearchResponse,
   SourcedCandidate,
   LANGUAGES,
   TOPICS,
@@ -18,21 +17,28 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
   const [activeSince, setActiveSince] = useState("");
   const [page, setPage] = useState(1);
 
-  const [data, setData] = useState<SearchResponse | null>(null);
+  const [allResults, setAllResults] = useState<GitHubResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState<{ reset: string | null } | null>(
     null
   );
+  const [hasMore, setHasMore] = useState(false);
 
   const [addedUsernames, setAddedUsernames] = useState<Set<string>>(new Set());
   const [addingUsername, setAddingUsername] = useState<string | null>(null);
 
   const [hasSearched, setHasSearched] = useState(false);
 
-  const runSearch = useCallback(
-    async (targetPage: number) => {
-      setLoading(true);
+  const fetchPage = useCallback(
+    async (targetPage: number, append: boolean) => {
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+        setAllResults([]);
+      }
       setError(null);
       setRateLimited(null);
       setHasSearched(true);
@@ -50,28 +56,33 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
         const json = await res.json();
         if (res.status === 429 || json?.rateLimit) {
           setRateLimited({ reset: json?.resetAt ?? null });
-          setData(null);
+          setHasMore(false);
         } else if (!res.ok) {
           setError(json?.error || `Search failed (${res.status})`);
-          setData(null);
+          setHasMore(false);
         } else {
-          setData(json);
+          const newResults: GitHubResult[] = json.results ?? [];
+          if (append) {
+            setAllResults((prev) => {
+              // Deduplicate by username
+              const seen = new Set(prev.map((r) => r.username));
+              const unique = newResults.filter((r) => !seen.has(r.username));
+              return [...prev, ...unique];
+            });
+          } else {
+            setAllResults(newResults);
+          }
+          setHasMore(json.has_more !== false && newResults.length > 0);
         }
       } catch (e) {
         setError((e as Error).message);
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     },
     [q, location, language, topic, activeSince]
   );
-
-  // Only search when page changes AFTER an initial search has been done
-  useEffect(() => {
-    if (!hasSearched) return;
-    runSearch(page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,8 +109,14 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (page !== 1) setPage(1);
-    else runSearch(1);
+    setPage(1);
+    fetchPage(1, false);
+  }
+
+  function loadMore() {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPage(nextPage, true);
   }
 
   async function addToPipeline(user: GitHubResult) {
@@ -149,8 +166,7 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
     }
   }
 
-  const totalCount = data?.total_count ?? 0;
-  const showPagination = hasSearched && totalCount > 10;
+  const resultCount = allResults.length;
 
   return (
     <section>
@@ -198,18 +214,9 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
           />
           <div className="md:col-span-2 flex items-end justify-between gap-3">
             <p className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
-              {data && hasSearched
-                ? data.activity_filtered
-                  ? `${data.shown_count} result${data.shown_count === 1 ? "" : "s"}`
-                  : `${data.results.length} result${data.results.length === 1 ? "" : "s"}`
+              {hasSearched && resultCount > 0
+                ? `${resultCount} result${resultCount === 1 ? "" : "s"}`
                 : ""}
-              {data?.rate_limit?.remaining !== null &&
-                data?.rate_limit?.remaining !== undefined &&
-                data.rate_limit.remaining < 5 && (
-                  <span className="ml-3 text-[#f87171]">
-                    ⚠ API limit low ({data.rate_limit.remaining} left)
-                  </span>
-                )}
             </p>
             <button
               type="submit"
@@ -246,56 +253,48 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
           <p className="text-lg text-[var(--text-muted)] mb-2">🔍</p>
           <p className="text-sm text-[var(--text-muted)]">Set your filters and hit Search to find developers on GitHub.</p>
         </div>
-      ) : loading && !data ? (
+      ) : loading && allResults.length === 0 ? (
         <SkeletonGrid />
-      ) : data && data.results.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data.results.map((user) => {
-            const added = addedUsernames.has(user.username.toLowerCase());
-            return (
-              <ResultCard
-                key={user.username}
-                user={user}
-                added={added}
-                adding={addingUsername === user.username}
-                onAdd={() => addToPipeline(user)}
-              />
-            );
-          })}
-        </div>
-      ) : data && data.results.length === 0 ? (
+      ) : allResults.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {allResults.map((user) => {
+              const added = addedUsernames.has(user.username.toLowerCase());
+              return (
+                <ResultCard
+                  key={user.username}
+                  user={user}
+                  added={added}
+                  adding={addingUsername === user.username}
+                  onAdd={() => addToPipeline(user)}
+                />
+              );
+            })}
+          </div>
+
+          {hasMore && (
+            <div className="mt-6 flex justify-center">
+              <button
+                disabled={loadingMore}
+                onClick={loadMore}
+                className="px-6 py-2.5 text-sm font-medium rounded-md border border-[var(--border)] hover:border-[var(--border-hover)] hover:bg-[var(--card-hover)] text-[var(--text-secondary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loadingMore ? "Loading more..." : "Load More"}
+              </button>
+            </div>
+          )}
+
+          {loadingMore && (
+            <div className="mt-4">
+              <SkeletonGrid />
+            </div>
+          )}
+        </>
+      ) : hasSearched && !loading ? (
         <div className="border border-dashed border-[var(--border)] rounded-lg p-10 text-center">
           <p className="text-sm text-[var(--text-muted)]">No GitHub users matched.</p>
         </div>
       ) : null}
-
-      {showPagination && (
-        <div className="mt-6 flex items-center justify-between">
-          <button
-            disabled={page <= 1 || loading}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-3 py-1.5 text-sm rounded-md border border-[var(--border)] hover:border-[var(--border-hover)] text-[var(--text-secondary)] disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            ← Previous
-          </button>
-          <span className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
-            Page {page} of {Math.min(Math.ceil(Math.min(totalCount, 1000) / 10), 100)}{" "}
-            <span className="text-[var(--text-muted)]/60">({totalCount.toLocaleString()} results)</span>
-          </span>
-          <button
-            disabled={
-              loading ||
-              !data ||
-              data.results.length < 10 ||
-              page * 10 >= Math.min(totalCount, 1000)
-            }
-            onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1.5 text-sm rounded-md border border-[var(--border)] hover:border-[var(--border-hover)] text-[var(--text-secondary)] disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            Next →
-          </button>
-        </div>
-      )}
     </section>
   );
 }
