@@ -99,9 +99,17 @@ function buildQuery(opts: {
     parts.push(`language:${opts.language.trim()}`);
   }
   if (opts.topic.trim() && opts.topic !== "Any") {
-    // GitHub user search doesn't support topic: directly — workaround: bare keyword
-    // It still helps surface users whose bio/repos mention the topic.
-    parts.push(opts.topic.trim());
+    // GitHub user search doesn't support topic: directly — workaround: bare keywords.
+    // Convert hyphens to spaces so "artificial-intelligence" becomes "artificial intelligence"
+    // and wrap in quotes to search as a phrase.
+    const topicWords = opts.topic.trim().replace(/-/g, " ");
+    // For short terms like "llm", "rag", "nlp" — search as bare keyword
+    // For multi-word terms — use quotes for phrase matching in bios
+    if (topicWords.includes(" ")) {
+      parts.push(`"${topicWords}"`);
+    } else {
+      parts.push(topicWords);
+    }
   }
   if (parts.length === 0) {
     // Avoid an empty query (GitHub returns 422). Default to a sane fallback.
