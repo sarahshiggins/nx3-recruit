@@ -28,14 +28,14 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
   const [addedUsernames, setAddedUsernames] = useState<Set<string>>(new Set());
   const [addingUsername, setAddingUsername] = useState<string | null>(null);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isFirstRender = useRef(true);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const runSearch = useCallback(
     async (targetPage: number) => {
       setLoading(true);
       setError(null);
       setRateLimited(null);
+      setHasSearched(true);
 
       const params = new URLSearchParams();
       if (q.trim()) params.set("q", q.trim());
@@ -63,35 +63,15 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
         setLoading(false);
       }
     },
-    [q, location, language, topic]
+    [q, location, language, topic, activeSince]
   );
 
+  // Only search when page changes AFTER an initial search has been done
   useEffect(() => {
-    runSearch(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (isFirstRender.current) return;
+    if (!hasSearched) return;
     runSearch(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      if (page !== 1) setPage(1);
-      else runSearch(1);
-    }, 400);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, location, language, topic]);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,7 +150,7 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
   }
 
   const totalCount = data?.total_count ?? 0;
-  const showPagination = totalCount > 10;
+  const showPagination = hasSearched && totalCount > 10;
 
   return (
     <section>
@@ -218,11 +198,11 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
           />
           <div className="md:col-span-2 flex items-end justify-between gap-3">
             <p className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
-              {data
+              {data && hasSearched
                 ? data.activity_filtered
                   ? `${data.shown_count} active of ${data.total_count.toLocaleString()} matches · page ${data.page}`
                   : `${data.total_count.toLocaleString()} matches · page ${data.page}`
-                : "—"}
+                : ""}
               {data?.rate_limit?.remaining !== null &&
                 data?.rate_limit?.remaining !== undefined &&
                 data.rate_limit.remaining < 5 && (
@@ -261,7 +241,12 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
         </div>
       )}
 
-      {loading && !data ? (
+      {!hasSearched && !loading ? (
+        <div className="border border-dashed border-[var(--border)] rounded-lg p-14 text-center">
+          <p className="text-lg text-[var(--text-muted)] mb-2">🔍</p>
+          <p className="text-sm text-[var(--text-muted)]">Set your filters and hit Search to find developers on GitHub.</p>
+        </div>
+      ) : loading && !data ? (
         <SkeletonGrid />
       ) : data && data.results.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
