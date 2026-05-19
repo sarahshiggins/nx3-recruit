@@ -200,8 +200,8 @@ export default function GitHubSearch({ onAdded }: { onAdded: () => void }) {
             <p className="text-xs text-[var(--text-muted)] font-[family-name:var(--font-mono)]">
               {data && hasSearched
                 ? data.activity_filtered
-                  ? `${data.shown_count} active of ${data.total_count.toLocaleString()} matches · page ${data.page}`
-                  : `${data.total_count.toLocaleString()} matches · page ${data.page}`
+                  ? `${data.shown_count} result${data.shown_count === 1 ? "" : "s"}`
+                  : `${data.results.length} result${data.results.length === 1 ? "" : "s"}`
                 : ""}
               {data?.rate_limit?.remaining !== null &&
                 data?.rate_limit?.remaining !== undefined &&
