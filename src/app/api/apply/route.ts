@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { notifyNewApplication } from "@/lib/notifications";
 import { jobs } from "@/lib/jobs";
+import { getJobTitle } from "@/lib/format-job-title";
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
       candidateName: `${firstName} ${lastName}`,
       email,
       phone: phone || undefined,
-      jobTitle: job?.title || jobSlug,
+      jobTitle: job?.title || getJobTitle(jobSlug),
       jobSlug,
       applicationId: data.id,
       resumeUrl: resumeUrl || undefined,
