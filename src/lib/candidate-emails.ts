@@ -99,6 +99,7 @@ export async function sendCandidateEmail(params: SendCandidateEmailParams) {
     body: JSON.stringify({
       from: `Nexus3 <${fromEmail}>`,
       to: [params.to],
+      bcc: [process.env.NOTIFY_EMAILS || "sarah.higgins@nexus3cap.com"],
       subject: template.subject(params.jobTitle),
       html: template.body(params.candidateName, params.jobTitle, params.customMessage),
     }),
