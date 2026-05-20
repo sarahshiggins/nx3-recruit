@@ -2,7 +2,8 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { jobs } from "@/lib/jobs";
+import { getJobTitle } from "@/lib/format-job-title";
+import { getAllJobs } from "@/lib/jobs-db";
 import ApplicationsTable from "./ApplicationsTable";
 
 type Application = {
@@ -81,6 +82,17 @@ export default async function ApplicationsPage({
 
   const applications = await getApplications(jobFilter, stageFilter);
 
+  // Build job filter options from DB jobs + any slugs in applications not in DB
+  const dbJobs = await getAllJobs();
+  const jobOptions: { slug: string; title: string }[] = dbJobs.map((j) => ({ slug: j.slug, title: j.title }));
+  const dbSlugs = new Set(dbJobs.map((j) => j.slug));
+  const appSlugs = new Set((applications ?? []).map((a) => a.job_slug));
+  for (const slug of appSlugs) {
+    if (!dbSlugs.has(slug)) {
+      jobOptions.push({ slug, title: getJobTitle(slug) });
+    }
+  }
+
   return (
     <div className="px-6 py-10 max-w-7xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
@@ -104,7 +116,7 @@ export default async function ApplicationsPage({
           >
             All jobs
           </FilterLink>
-          {jobs.map((job) => (
+          {jobOptions.map((job) => (
             <FilterLink
               key={job.slug}
               href={`/admin/applications?job=${job.slug}${stageFilter ? `&stage=${stageFilter}` : ""}`}
