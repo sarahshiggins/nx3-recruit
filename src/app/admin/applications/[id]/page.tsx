@@ -234,6 +234,7 @@ export default async function ApplicationDetailPage({
               stages={STAGES}
               stageLabels={STAGE_LABELS}
               stageColors={STAGE_COLORS}
+              candidateEmail={app.email}
             />
           </section>
 
