@@ -336,7 +336,7 @@ export async function GET(req: NextRequest) {
       ] as string[];
 
       // Insert into sourced_candidates
-      const { error: insertError } = await supabase
+      const { error: insertError } = await supabase!
         .from("sourced_candidates")
         .insert({
           github_username: user.login,
