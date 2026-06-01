@@ -13,9 +13,11 @@ import { createClient } from "@supabase/supabase-js";
 const GITHUB_API = "https://api.github.com";
 const USER_AGENT = "NX3-Recruit-Scanner";
 
-// Search configurations — each maps to the kind of dev we're looking for.
-// These run in sequence. GitHub Search API limit: 30 requests/min, 1000 results/query.
-const SEARCH_CONFIGS = [
+// ── User-profile search configs ──────────────────────────────────────────────
+// GitHub User Search matches against profile fields (bio, name, location, etc.).
+// We run both Chicago and Illinois variants to cover the whole state.
+const USER_SEARCH_CONFIGS = [
+  // Chicago — primary
   {
     label: "Chicago AI/ML Python devs",
     query: 'location:"Chicago" language:Python machine learning',
@@ -41,11 +43,72 @@ const SEARCH_CONFIGS = [
     query: 'location:"Chicago" language:Rust machine learning',
     jobSlug: "genai-rd-engineer",
   },
+  // Illinois — wider net
   {
-    label: "Illinois AI devs",
-    query: 'location:"Illinois" language:Python llm',
+    label: "Illinois AI/ML Python devs",
+    query: 'location:"Illinois" language:Python machine learning',
     jobSlug: "genai-rd-engineer",
   },
+  {
+    label: "Illinois LLM/agents devs",
+    query: 'location:"Illinois" language:Python llm agents',
+    jobSlug: "genai-rd-engineer",
+  },
+  {
+    label: "Illinois TypeScript AI devs",
+    query: 'location:"Illinois" language:TypeScript artificial intelligence',
+    jobSlug: "genai-rd-engineer",
+  },
+  {
+    label: "Illinois deep learning devs",
+    query: 'location:"Illinois" language:Python deep learning',
+    jobSlug: "genai-rd-engineer",
+  },
+];
+
+// ── Repo-based search configs ────────────────────────────────────────────────
+// GitHub Repo Search finds repos by topic/description/README content.
+// We then look up the repo owner's profile to check location + activity.
+// This catches devs who don't mention AI in their bio but have ML projects.
+const REPO_SEARCH_CONFIGS = [
+  {
+    label: "LLM/agent repos (Python)",
+    query: "topic:llm topic:agents language:Python stars:>5",
+    jobSlug: "genai-rd-engineer",
+  },
+  {
+    label: "Machine learning repos (Python)",
+    query: "topic:machine-learning language:Python stars:>10",
+    jobSlug: "genai-rd-engineer",
+  },
+  {
+    label: "RAG / retrieval repos",
+    query: "topic:rag language:Python stars:>3",
+    jobSlug: "genai-rd-engineer",
+  },
+  {
+    label: "Deep learning repos (PyTorch/TF)",
+    query: "topic:deep-learning language:Python stars:>10",
+    jobSlug: "genai-rd-engineer",
+  },
+];
+
+// Locations we accept when checking repo owners
+const ACCEPTED_LOCATIONS = [
+  "chicago",
+  "illinois",
+  "il",
+  "evanston",
+  "naperville",
+  "champaign",
+  "urbana",
+  "oak park",
+  "schaumburg",
+  "springfield, il",
+  "peoria, il",
+  "dekalb",
+  "normal, il",
+  "bloomington, il",
 ];
 
 // Only scan devs who pushed code in the last N days
@@ -158,17 +221,21 @@ export async function GET(req: NextRequest) {
     page++;
   }
 
-  const results: {
+  type QueryResult = {
     query: string;
+    type: "user" | "repo";
     searched: number;
     added: number;
     skipped_existing: number;
     skipped_inactive: number;
+    skipped_wrong_location: number;
     errors: string[];
-  }[] = [];
+  };
+
+  const results: QueryResult[] = [];
 
   let totalAdded = 0;
-  const newCandidates: {
+  type NewCandidate = {
     username: string;
     name: string | null;
     location: string | null;
@@ -176,19 +243,173 @@ export async function GET(req: NextRequest) {
     html_url: string;
     top_langs: string[];
     jobSlug: string;
-  }[] = [];
+    discovery: string; // "profile" or "repo"
+  };
+  const newCandidates: NewCandidate[] = [];
 
   // Track usernames added in this run to avoid cross-query duplicates
   const addedThisRun = new Set<string>();
 
-  for (const config of SEARCH_CONFIGS) {
-    const queryResult = {
+  // Helper: check if a location string matches Chicago / Illinois
+  function isAcceptedLocation(loc: string | null): boolean {
+    if (!loc) return false;
+    const lower = loc.toLowerCase();
+    return ACCEPTED_LOCATIONS.some((a) => lower.includes(a));
+  }
+
+  // Helper: enrich a user and insert if they pass filters
+  async function enrichAndInsert(
+    login: string,
+    avatarUrl: string,
+    htmlUrl: string,
+    config: { label: string; jobSlug: string },
+    queryResult: QueryResult,
+    opts: { checkLocation?: boolean; discovery: string }
+  ): Promise<void> {
+    const usernameLower = login.toLowerCase();
+
+    // Skip if already in pipeline or added in this run
+    if (
+      existingUsernames.has(usernameLower) ||
+      addedThisRun.has(usernameLower)
+    ) {
+      queryResult.skipped_existing++;
+      return;
+    }
+
+    try {
+      const [userRes, reposRes, eventsRes] = await Promise.all([
+        ghFetch(`${GITHUB_API}/users/${encodeURIComponent(login)}`),
+        ghFetch(
+          `${GITHUB_API}/users/${encodeURIComponent(login)}/repos?sort=stars&direction=desc&per_page=3&type=owner`
+        ),
+        ghFetch(
+          `${GITHUB_API}/users/${encodeURIComponent(login)}/events/public?per_page=10`
+        ),
+      ]);
+
+      if (!userRes.ok) return;
+      const user = (await userRes.json()) as GitHubUser;
+
+      // Location check for repo-based discovery
+      if (opts.checkLocation && !isAcceptedLocation(user.location)) {
+        queryResult.skipped_wrong_location++;
+        return;
+      }
+
+      // Activity check
+      let lastPush: string | null = null;
+      if (eventsRes.ok) {
+        const events = (await eventsRes.json()) as {
+          type: string;
+          created_at: string;
+        }[];
+        const pushEvent = events.find((e) => e.type === "PushEvent");
+        if (pushEvent) lastPush = pushEvent.created_at;
+      }
+
+      const lastActivity = lastPush || user.updated_at;
+      if (!lastActivity || lastActivity < activityCutoff) {
+        queryResult.skipped_inactive++;
+        return;
+      }
+
+      let repos: GitHubRepo[] = [];
+      if (reposRes.ok) {
+        repos = (await reposRes.json()) as GitHubRepo[];
+      }
+
+      const topRepos = repos
+        .filter((r) => !r.fork)
+        .slice(0, 3)
+        .map((r) => ({
+          name: r.name,
+          description: r.description,
+          language: r.language,
+          stargazers_count: r.stargazers_count,
+          html_url: r.html_url,
+          topics: r.topics ?? [],
+        }));
+
+      const topLangs = [
+        ...new Set(topRepos.map((r) => r.language).filter(Boolean)),
+      ] as string[];
+
+      // Insert into sourced_candidates
+      const { error: insertError } = await supabase
+        .from("sourced_candidates")
+        .insert({
+          github_username: user.login,
+          github_url: user.html_url,
+          name: user.name,
+          email: user.email,
+          bio: user.bio,
+          location: user.location,
+          company: user.company,
+          avatar_url: user.avatar_url,
+          profile_data: {
+            public_repos: user.public_repos,
+            followers: user.followers,
+            following: user.following,
+            twitter_username: user.twitter_username,
+            blog: user.blog,
+            hireable: user.hireable,
+            created_at: user.created_at,
+            last_push_at: lastPush,
+            scan_source: "automated",
+            scan_discovery: opts.discovery,
+            scan_query: config.label,
+            scan_date: new Date().toISOString(),
+          },
+          top_repos: topRepos,
+          matched_job_slugs: [config.jobSlug],
+          source: "GITHUB_SCAN",
+          status: "NEW",
+        });
+
+      if (insertError) {
+        if ((insertError as { code?: string }).code === "23505") {
+          queryResult.skipped_existing++;
+          existingUsernames.add(usernameLower);
+        } else {
+          queryResult.errors.push(
+            `Insert ${user.login}: ${insertError.message}`
+          );
+        }
+      } else {
+        queryResult.added++;
+        totalAdded++;
+        addedThisRun.add(usernameLower);
+        existingUsernames.add(usernameLower);
+        newCandidates.push({
+          username: user.login,
+          name: user.name,
+          location: user.location,
+          bio: user.bio,
+          html_url: user.html_url,
+          top_langs: topLangs,
+          jobSlug: config.jobSlug,
+          discovery: opts.discovery,
+        });
+      }
+    } catch (enrichErr) {
+      queryResult.errors.push(
+        `Enrich ${login}: ${(enrichErr as Error).message}`
+      );
+    }
+  }
+
+  // ── Phase 1: User-profile searches (Chicago + Illinois) ──────────────
+  for (const config of USER_SEARCH_CONFIGS) {
+    const queryResult: QueryResult = {
       query: config.label,
+      type: "user",
       searched: 0,
       added: 0,
       skipped_existing: 0,
       skipped_inactive: 0,
-      errors: [] as string[],
+      skipped_wrong_location: 0,
+      errors: [],
     };
 
     try {
@@ -220,143 +441,17 @@ export async function GET(req: NextRequest) {
 
         for (const item of searchJson.items) {
           queryResult.searched++;
-          const usernameLower = item.login.toLowerCase();
-
-          // Skip if already in pipeline or added in this run
-          if (
-            existingUsernames.has(usernameLower) ||
-            addedThisRun.has(usernameLower)
-          ) {
-            queryResult.skipped_existing++;
-            continue;
-          }
-
-          // Enrich: get profile + repos + events
-          try {
-            const [userRes, reposRes, eventsRes] = await Promise.all([
-              ghFetch(
-                `${GITHUB_API}/users/${encodeURIComponent(item.login)}`
-              ),
-              ghFetch(
-                `${GITHUB_API}/users/${encodeURIComponent(
-                  item.login
-                )}/repos?sort=stars&direction=desc&per_page=3&type=owner`
-              ),
-              ghFetch(
-                `${GITHUB_API}/users/${encodeURIComponent(
-                  item.login
-                )}/events/public?per_page=10`
-              ),
-            ]);
-
-            if (!userRes.ok) continue;
-            const user = (await userRes.json()) as GitHubUser;
-
-            // Activity check
-            let lastPush: string | null = null;
-            if (eventsRes.ok) {
-              const events = (await eventsRes.json()) as {
-                type: string;
-                created_at: string;
-              }[];
-              const pushEvent = events.find((e) => e.type === "PushEvent");
-              if (pushEvent) lastPush = pushEvent.created_at;
-            }
-
-            const lastActivity = lastPush || user.updated_at;
-            if (!lastActivity || lastActivity < activityCutoff) {
-              queryResult.skipped_inactive++;
-              continue;
-            }
-
-            let repos: GitHubRepo[] = [];
-            if (reposRes.ok) {
-              repos = (await reposRes.json()) as GitHubRepo[];
-            }
-
-            const topRepos = repos
-              .filter((r) => !r.fork)
-              .slice(0, 3)
-              .map((r) => ({
-                name: r.name,
-                description: r.description,
-                language: r.language,
-                stargazers_count: r.stargazers_count,
-                html_url: r.html_url,
-                topics: r.topics ?? [],
-              }));
-
-            const topLangs = [
-              ...new Set(topRepos.map((r) => r.language).filter(Boolean)),
-            ] as string[];
-
-            // Insert into sourced_candidates
-            const { error: insertError } = await supabase
-              .from("sourced_candidates")
-              .insert({
-                github_username: user.login,
-                github_url: user.html_url,
-                name: user.name,
-                email: user.email,
-                bio: user.bio,
-                location: user.location,
-                company: user.company,
-                avatar_url: user.avatar_url,
-                profile_data: {
-                  public_repos: user.public_repos,
-                  followers: user.followers,
-                  following: user.following,
-                  twitter_username: user.twitter_username,
-                  blog: user.blog,
-                  hireable: user.hireable,
-                  created_at: user.created_at,
-                  last_push_at: lastPush,
-                  scan_source: "automated",
-                  scan_query: config.label,
-                  scan_date: new Date().toISOString(),
-                },
-                top_repos: topRepos,
-                matched_job_slugs: [config.jobSlug],
-                source: "GITHUB_SCAN",
-                status: "NEW",
-              });
-
-            if (insertError) {
-              // Unique constraint = already exists, skip
-              if ((insertError as { code?: string }).code === "23505") {
-                queryResult.skipped_existing++;
-                existingUsernames.add(usernameLower);
-              } else {
-                queryResult.errors.push(
-                  `Insert ${user.login}: ${insertError.message}`
-                );
-              }
-            } else {
-              queryResult.added++;
-              totalAdded++;
-              addedThisRun.add(usernameLower);
-              existingUsernames.add(usernameLower);
-              newCandidates.push({
-                username: user.login,
-                name: user.name,
-                location: user.location,
-                bio: user.bio,
-                html_url: user.html_url,
-                top_langs: topLangs,
-                jobSlug: config.jobSlug,
-              });
-            }
-          } catch (enrichErr) {
-            queryResult.errors.push(
-              `Enrich ${item.login}: ${(enrichErr as Error).message}`
-            );
-          }
+          await enrichAndInsert(
+            item.login,
+            item.avatar_url,
+            item.html_url,
+            config,
+            queryResult,
+            { discovery: "profile" }
+          );
         }
 
-        // If fewer results than per_page, no more pages
         if (searchJson.items.length < PER_PAGE) break;
-
-        // Small delay between pages to respect rate limits
         await new Promise((r) => setTimeout(r, 500));
       }
     } catch (err) {
@@ -364,8 +459,84 @@ export async function GET(req: NextRequest) {
     }
 
     results.push(queryResult);
+    await new Promise((r) => setTimeout(r, 1000));
+  }
 
-    // Delay between queries to avoid hammering rate limits
+  // ── Phase 2: Repo-based searches (find devs by their projects) ───────
+  // Search repos by topic/content, then check if the owner is in IL.
+  // This catches devs who don't mention AI in their bio but have ML repos.
+  for (const config of REPO_SEARCH_CONFIGS) {
+    const queryResult: QueryResult = {
+      query: `[repo] ${config.label}`,
+      type: "repo",
+      searched: 0,
+      added: 0,
+      skipped_existing: 0,
+      skipped_inactive: 0,
+      skipped_wrong_location: 0,
+      errors: [],
+    };
+
+    try {
+      for (let p = 1; p <= MAX_PAGES_PER_QUERY; p++) {
+        const searchUrl = `${GITHUB_API}/search/repositories?q=${encodeURIComponent(
+          config.query
+        )}&sort=updated&order=desc&per_page=${PER_PAGE}&page=${p}`;
+
+        const searchRes = await ghFetch(searchUrl);
+
+        if (searchRes.status === 403 || searchRes.status === 429) {
+          queryResult.errors.push("Rate limited — stopping this query");
+          break;
+        }
+
+        if (!searchRes.ok) {
+          queryResult.errors.push(
+            `GitHub repo search returned ${searchRes.status}`
+          );
+          break;
+        }
+
+        type RepoSearchItem = {
+          owner: { login: string; avatar_url: string; html_url: string; type: string };
+          fork: boolean;
+        };
+
+        const searchJson = (await searchRes.json()) as {
+          total_count: number;
+          items: RepoSearchItem[];
+        };
+
+        if (searchJson.items.length === 0) break;
+
+        // Deduplicate owners within this page
+        const seenOwners = new Set<string>();
+        for (const repo of searchJson.items) {
+          // Skip orgs and forks
+          if (repo.owner.type !== "User" || repo.fork) continue;
+          const ownerLower = repo.owner.login.toLowerCase();
+          if (seenOwners.has(ownerLower)) continue;
+          seenOwners.add(ownerLower);
+
+          queryResult.searched++;
+          await enrichAndInsert(
+            repo.owner.login,
+            repo.owner.avatar_url,
+            repo.owner.html_url,
+            config,
+            queryResult,
+            { checkLocation: true, discovery: "repo" }
+          );
+        }
+
+        if (searchJson.items.length < PER_PAGE) break;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    } catch (err) {
+      queryResult.errors.push(`Query failed: ${(err as Error).message}`);
+    }
+
+    results.push(queryResult);
     await new Promise((r) => setTimeout(r, 1000));
   }
 
@@ -383,7 +554,7 @@ export async function GET(req: NextRequest) {
   try {
     await supabase.from("scan_history").insert({
       scan_type: "github_automated",
-      queries_run: SEARCH_CONFIGS.length,
+      queries_run: USER_SEARCH_CONFIGS.length + REPO_SEARCH_CONFIGS.length,
       total_searched: results.reduce((s, r) => s + r.searched, 0),
       total_added: totalAdded,
       total_skipped_existing: results.reduce(
@@ -418,6 +589,7 @@ async function sendDigestEmail(
     html_url: string;
     top_langs: string[];
     jobSlug: string;
+    discovery: string;
   }[],
   totalAdded: number
 ) {
@@ -445,7 +617,7 @@ async function sendDigestEmail(
         </td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #eee; color: #6b7280; font-size: 13px; max-width: 300px;">
           ${c.bio ? c.bio.slice(0, 120) + (c.bio.length > 120 ? "…" : "") : "—"}
-        </td>
+          ${c.discovery === "repo" ? '<br/><span style="font-size: 11px; color: #9ca3af;">📦 Found via repo</span>' : ""}        </td>
       </tr>`
     )
     .join("");
