@@ -104,32 +104,58 @@ You'll join NX3 Labs - Nexus3's R&D division - as a core member of a small, focu
   },
   {
     id: "3",
-    slug: "bd-intern",
-    title: "Business Development Intern",
+    slug: "business-development-intern",
+    title: "Business Development Intern \u2014 Fall 2026",
     location: "Chicago, IL",
     type: "Internship",
     department: "Business Development",
     summary:
-      "Identify vertical markets ripe for AI disruption, ideate solutions, and participate in customer discovery. Direct mentorship from the founding CEO.",
-    description: `## About the Role
+      "Join Nexus3 to help build a new AI-powered company in the energy space. Work directly with the founding CEO on market research, business cases, and go-to-market strategy from scratch.",
+    description: `## About Nexus3
 
-Nexus3 is seeking a proactive Business Development Intern to join for the summer, with the potential to extend into the fall. Your mission: identify vertical markets that can benefit from or be disrupted by generative AI.
+Nexus3 builds and operates AI-driven businesses across industries where intelligent systems can replace entire workflows. Our operating companies, NX3 Labs (our R&D division), and Nexus3 Capital (our investment arm) work together to turn early research into commercial products at scale. Nexus3 is founded and led by Tim Stojka, a serial entrepreneur with 25+ years of experience building cutting-edge software companies across multiple industries.
 
-## Key Responsibilities
+## About This Internship
 
-- Conduct in-depth market research to uncover opportunities in strategic and vertical markets for generative AI innovations
-- Understand emergent use cases of AI and develop ways to apply them in novel ways
-- Collaborate with engineering teams to align AI solution capabilities with identified market opportunities
-- Engage with industry stakeholders to promote our AI solutions and gather market intelligence
-- Develop business cases for market entry, including market size analysis, competition, and strategic planning
+Nexus3 is building a new portfolio company in the energy space — using AI to transform how energy industry data is analyzed, monitored, and acted on. This is an early-stage venture where the market opportunity is massive, the technology is bleeding-edge, and nothing is set in stone yet.
+
+We're looking for a Business Development Intern who wants to be in the room while this company takes shape. You'll work directly with the founding CEO to research the energy market, identify the highest-value problems AI can solve, build business cases, and help define the go-to-market strategy from scratch.
+
+This isn't a generic "explore all verticals" internship. You'll go deep on one sector — energy — and help us figure out exactly where and how to build a business that matters.
+
+## What You'll Do
+
+- Conduct deep market research on the energy industry — regulatory landscape, utility operations, market structure, and where AI can create the most value
+- Identify specific pain points and workflows in the energy sector that are ripe for AI-driven disruption
+- Develop business cases for market entry, including market sizing, competitive analysis, customer segmentation, and strategic positioning
+- Engage with industry stakeholders to gather market intelligence and validate hypotheses about product-market fit
+- Collaborate with the engineering team to align AI capabilities with real market needs
+- Participate in customer discovery — talk to potential users, understand their workflows, and bring those insights back to the team
+- Help shape the go-to-market strategy for a new AI-powered energy company from the ground up
 
 ## Requirements
 
-- Bachelor or Master degree in Business, Technology, or related field
-- Experience in business development, market research, or strategy in tech or AI sectors
+- Bachelor's or Master's degree in Business, Technology, Engineering, or related field
+- Experience in business development, market research, or strategy — ideally in tech, AI, or energy
 - Strong analytical capabilities for interpreting data and identifying market trends
-- Exceptional communication skills
-- Self-driven, innovative thinker passionate about technology`,
+- Exceptional communication skills — you can articulate complex concepts clearly and build relationships with stakeholders across industries
+- Self-driven and comfortable with ambiguity — you can make progress when there's no playbook
+- Genuine curiosity about and experience with AI and its real-world applications
+
+## Preferred
+
+- Knowledge of or experience in the energy industry (utilities, power markets, regulatory, energy tech)
+- Engineering or Science/Mathematics degree
+- Hands-on experience with AI tools or software prototyping
+- Strong technical intuition — you understand how software products are built even if you're not writing code
+- Interest in early-stage ventures and company building
+
+## We Offer
+
+- Direct mentorship from the founding CEO — you'll work with leadership daily
+- A front-row seat to building a new AI company in the energy space from scratch
+- Real ownership over meaningful work — your research and analysis will directly shape company strategy
+- Competitive compensation that values your contribution and growth`,
     screeningQuestions: [
       {
         id: "q1",
