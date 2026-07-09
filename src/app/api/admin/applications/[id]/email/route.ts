@@ -4,6 +4,11 @@ import { supabase } from "@/lib/supabase";
 import { sendCandidateEmail } from "@/lib/candidate-emails";
 import { jobs } from "@/lib/jobs";
 
+const LEGACY_JOB_TITLES: Record<string, string> = {
+  "r-d-ai-engineer": "GenAI R&D Engineer",
+  "genai-r-d-engineer": "GenAI R&D Engineer",
+};
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -36,11 +41,12 @@ export async function POST(
   }
 
   const job = jobs.find((j) => j.slug === app.job_slug);
+  const jobTitle = job?.title || LEGACY_JOB_TITLES[app.job_slug] || app.job_slug;
 
   const result = await sendCandidateEmail({
     to: app.email,
     candidateName: `${app.first_name} ${app.last_name}`,
-    jobTitle: job?.title || app.job_slug,
+    jobTitle,
     type,
     customMessage,
   });
