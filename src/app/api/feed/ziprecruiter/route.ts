@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOpenJobs, type JobListing } from "@/lib/jobs-db";
 
-const SITE_URL = "https://nx3-recruit.vercel.app";
+const SITE_URL = "https://careers.nexus3.ai";
 
 function escapeXml(value: string): string {
   return value

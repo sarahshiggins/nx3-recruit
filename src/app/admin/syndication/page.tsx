@@ -23,7 +23,7 @@ const STATUS_YELLOW = {
   color: "#f59e0b",
 };
 
-const FEED_BASE = "https://nx3-recruit.vercel.app";
+const FEED_BASE = "https://careers.nexus3.ai";
 const JSON_API_URL = `${FEED_BASE}/api/jobs`;
 
 const BOARDS: Board[] = [

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getOpenJobs, type JobListing } from "@/lib/jobs-db";
 
-const SITE_URL = "https://nx3-recruit.vercel.app";
+const SITE_URL = "https://careers.nexus3.ai";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

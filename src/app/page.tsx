@@ -82,7 +82,7 @@ function JobCard({ job }: { job: JobListing }) {
 
 async function OpenPositions() {
   const jobs = await getOpenJobs();
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nx3-recruit.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://careers.nexus3.ai";
 
   return (
     <>
